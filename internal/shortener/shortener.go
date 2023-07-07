@@ -16,8 +16,14 @@ func (application *Application) GetEndpoints() []app.Endpoint {
 	return []app.Endpoint{
 		{
 			Url: "/",
-			HandlerFunc: func(w http.ResponseWriter, r *http.Request) {
-				w.Write([]byte("Hello world!"))
+			HandlerFunc: func(writer http.ResponseWriter, request *http.Request) {
+				if request.Method == http.MethodGet {
+					handleGetURL(writer, request)
+				} else if request.Method == http.MethodPost {
+					handleAddURL(writer, request)
+				} else {
+					writer.WriteHeader(http.StatusMethodNotAllowed)
+				}
 			},
 		},
 	}
@@ -25,4 +31,12 @@ func (application *Application) GetEndpoints() []app.Endpoint {
 
 func (application *Application) GetAddr() string {
 	return ":8080"
+}
+
+func handleAddURL(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func handleGetURL(w http.ResponseWriter, r *http.Request) {
+
 }
