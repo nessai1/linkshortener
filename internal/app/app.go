@@ -5,10 +5,6 @@ import (
 	"net/http"
 )
 
-func Listen(handler *http.Handler) {
-	http.ListenAndServe(":8080", *handler)
-}
-
 func Run(handler ApplicationHandler) {
 	mux := http.NewServeMux()
 	fillMux(mux, handler.GetEndpoints())

@@ -2,15 +2,24 @@ package shortener
 
 import (
 	"github.com/nessai1/linkshortener/internal/app"
+	encoder "github.com/nessai1/linkshortener/internal/shortener/decoder"
+	"io"
+	"log"
 	"net/http"
+	"regexp"
 )
 
 func GetApplication() *Application {
-	application := Application{}
+	application := Application{
+		links: map[string]string{},
+	}
+
 	return &application
 }
 
-type Application struct{}
+type Application struct {
+	links map[string]string
+}
 
 func (application *Application) GetEndpoints() []app.Endpoint {
 	return []app.Endpoint{
@@ -18,9 +27,9 @@ func (application *Application) GetEndpoints() []app.Endpoint {
 			Url: "/",
 			HandlerFunc: func(writer http.ResponseWriter, request *http.Request) {
 				if request.Method == http.MethodGet {
-					handleGetURL(writer, request)
+					application.handleGetURL(writer, request)
 				} else if request.Method == http.MethodPost {
-					handleAddURL(writer, request)
+					application.handleAddURL(writer, request)
 				} else {
 					writer.WriteHeader(http.StatusMethodNotAllowed)
 				}
@@ -30,13 +39,79 @@ func (application *Application) GetEndpoints() []app.Endpoint {
 }
 
 func (application *Application) GetAddr() string {
-	return ":8080"
+	return "localhost:8080"
 }
 
-func handleAddURL(w http.ResponseWriter, r *http.Request) {
+func (application *Application) handleAddURL(writer http.ResponseWriter, request *http.Request) {
+	contentType := request.Header.Get("Content-Type")
+	if contentType != "text/plain" {
+		writer.Write([]byte("Incorrect media type. Request content must be text/plain type."))
+		writer.WriteHeader(http.StatusUnsupportedMediaType)
+		return
+	}
 
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		writer.Write([]byte("Failed to read body."))
+		writer.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if !validateURL(body) {
+		writer.Write([]byte("Invalid pattern of given URI"))
+		writer.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	hash, err := application.createResource(string(body))
+	if err != nil {
+		log.Printf("Error while creating resource '%s'\n", body)
+
+		writer.Write([]byte("Error while creating resource!"))
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	writer.Header().Set("Content-Type", "text/plain")
+	writer.Write([]byte(hash))
+	writer.WriteHeader(http.StatusCreated)
+	return
 }
 
-func handleGetURL(w http.ResponseWriter, r *http.Request) {
+func (application *Application) handleGetURL(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Path[1:]
+	if token == "" {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 
+	URI, ok := application.links[token]
+	if !ok {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Location", URI)
+	w.WriteHeader(http.StatusTemporaryRedirect)
+	return
+}
+
+func validateURL(url []byte) bool {
+	res, err := regexp.Match(`^https?://[^\s]+$`, url)
+	if err != nil {
+		return false
+	}
+
+	return res
+}
+
+func (application *Application) createResource(url string) (string, error) {
+	hash, err := encoder.EncodeURL(url)
+	if err != nil {
+		return "", err
+	}
+
+	application.links[hash] = url
+
+	return hash, nil
 }

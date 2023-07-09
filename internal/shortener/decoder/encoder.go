@@ -12,7 +12,7 @@ func EncodeURL(url string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	e, err := h.Encode([]int{45, 434, 1313, 99})
+	e, err := h.Encode([]int{1, 2, 42, 3})
 	if err != nil {
 		return "", err
 	}
