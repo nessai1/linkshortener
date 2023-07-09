@@ -46,14 +46,14 @@ func (application *Application) handleAddURL(writer http.ResponseWriter, request
 
 	body, err := io.ReadAll(request.Body)
 	if err != nil {
-		writer.Write([]byte("Failed to read body."))
 		writer.WriteHeader(http.StatusBadRequest)
+		writer.Write([]byte("Failed to read body."))
 		return
 	}
 
 	if !validateURL(body) {
-		writer.Write([]byte("Invalid pattern of given URI"))
 		writer.WriteHeader(http.StatusBadRequest)
+		writer.Write([]byte("Invalid pattern of given URI"))
 		return
 	}
 
@@ -61,14 +61,14 @@ func (application *Application) handleAddURL(writer http.ResponseWriter, request
 	if err != nil {
 		log.Printf("Error while creating resource '%s'\n", body)
 
-		writer.Write([]byte("Error while creating resource!"))
 		writer.WriteHeader(http.StatusInternalServerError)
+		writer.Write([]byte("Error while creating resource!"))
 		return
 	}
 
 	writer.Header().Set("Content-Type", "text/plain")
-	writer.Write([]byte(hash))
 	writer.WriteHeader(http.StatusCreated)
+	writer.Write([]byte(hash))
 	return
 }
 
