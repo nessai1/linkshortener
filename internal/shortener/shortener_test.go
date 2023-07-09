@@ -129,6 +129,7 @@ func TestApplication_handleGetURL(t *testing.T) {
 			w := httptest.NewRecorder()
 			app.handleGetURL(w, r)
 			res := w.Result()
+			defer res.Body.Close()
 
 			assert.Equalf(t, tt.wantedRequest.status, res.StatusCode,
 				"Invalid response status %s (%s expected)", res.StatusCode, tt.wantedRequest.status,
