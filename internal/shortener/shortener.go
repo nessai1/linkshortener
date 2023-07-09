@@ -24,7 +24,7 @@ type Application struct {
 func (application *Application) GetEndpoints() []app.Endpoint {
 	return []app.Endpoint{
 		{
-			Url: "/",
+			URL: "/",
 			HandlerFunc: func(writer http.ResponseWriter, request *http.Request) {
 				if request.Method == http.MethodGet {
 					application.handleGetURL(writer, request)
@@ -75,7 +75,6 @@ func (application *Application) handleAddURL(writer http.ResponseWriter, request
 	writer.Header().Set("Content-Type", "text/plain")
 	writer.WriteHeader(http.StatusCreated)
 	writer.Write([]byte(link))
-	return
 }
 
 func (application *Application) handleGetURL(writer http.ResponseWriter, request *http.Request) {
@@ -93,7 +92,6 @@ func (application *Application) handleGetURL(writer http.ResponseWriter, request
 
 	writer.Header().Set("Location", URI)
 	writer.WriteHeader(http.StatusTemporaryRedirect)
-	return
 }
 
 func validateURL(url []byte) bool {

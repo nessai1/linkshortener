@@ -13,12 +13,12 @@ func Run(handler ApplicationHandler) {
 
 func fillMux(mux *http.ServeMux, endpoints []Endpoint) {
 	for _, endpoint := range endpoints {
-		mux.HandleFunc(endpoint.Url, endpoint.HandlerFunc)
+		mux.HandleFunc(endpoint.URL, endpoint.HandlerFunc)
 	}
 }
 
 type Endpoint struct {
-	Url         string
+	URL         string
 	HandlerFunc func(http.ResponseWriter, *http.Request)
 }
 
