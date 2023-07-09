@@ -20,8 +20,8 @@ func TestApplication_handleAddURL(t *testing.T) {
 	app := GetApplication()
 	serviceURL := "http://" + app.GetAddr() + "/"
 
-	yandexHash, err := encoder.EncodeURL("https://ya.ru")
-	require.NoError(t, err, "Error while encoding yandex url")
+	testHash, err := encoder.EncodeURL("https://ya.ru")
+	require.NoError(t, err, "Error while encoding test url")
 
 	tests := []struct {
 		name          string
@@ -33,7 +33,7 @@ func TestApplication_handleAddURL(t *testing.T) {
 			addr: "https://ya.ru",
 			wantedRequest: request{
 				status: http.StatusCreated,
-				body:   serviceURL + yandexHash,
+				body:   serviceURL + testHash,
 			},
 		},
 		// Проверяем, что при повторной попытке записать адрес - отдает тот же ответ
@@ -42,7 +42,7 @@ func TestApplication_handleAddURL(t *testing.T) {
 			addr: "https://ya.ru",
 			wantedRequest: request{
 				status: http.StatusCreated,
-				body:   serviceURL + yandexHash,
+				body:   serviceURL + testHash,
 			},
 		},
 		{
@@ -78,6 +78,64 @@ func TestApplication_handleAddURL(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equalf(t, tt.wantedRequest.body, string(resBody),
 				"Invalid response body %s (%s expected)", resBody, tt.wantedRequest.body,
+			)
+		})
+	}
+}
+
+func TestApplication_handleGetURL(t *testing.T) {
+	type request struct {
+		status   int
+		location string
+	}
+
+	app := GetApplication()
+	serviceURL := "http://" + app.GetAddr() + "/"
+	testURL := "https://ya.ru"
+	testHash, err := app.createResource(testURL)
+	require.NoError(t, err, "Error while create test url")
+
+	tests := []struct {
+		name          string
+		wantedRequest request
+		hash          string
+	}{
+		{
+			name: "Get existing resource",
+			wantedRequest: request{
+				status:   http.StatusTemporaryRedirect,
+				location: testURL,
+			},
+			hash: testHash,
+		},
+		{
+			name: "Get non-existing resource",
+			wantedRequest: request{
+				status: http.StatusNotFound,
+			},
+			hash: "NoNeXiSt42",
+		},
+		{
+			name: "Get empty path",
+			wantedRequest: request{
+				status: http.StatusNotFound,
+			},
+			hash: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodGet, serviceURL+tt.hash, nil)
+			w := httptest.NewRecorder()
+			app.handleGetURL(w, r)
+			res := w.Result()
+
+			assert.Equalf(t, tt.wantedRequest.status, res.StatusCode,
+				"Invalid response status %s (%s expected)", res.StatusCode, tt.wantedRequest.status,
+			)
+
+			assert.Equalf(t, tt.wantedRequest.location, res.Header.Get("Location"),
+				"Invalid location header %s (%s expected)", res.Header.Get("Location"), tt.wantedRequest.location,
 			)
 		})
 	}
