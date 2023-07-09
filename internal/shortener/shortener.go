@@ -43,12 +43,6 @@ func (application *Application) GetAddr() string {
 }
 
 func (application *Application) handleAddURL(writer http.ResponseWriter, request *http.Request) {
-	contentType := request.Header.Get("Content-Type")
-	if contentType != "text/plain" {
-		writer.Write([]byte("Incorrect media type. Request content must be text/plain type."))
-		writer.WriteHeader(http.StatusUnsupportedMediaType)
-		return
-	}
 
 	body, err := io.ReadAll(request.Body)
 	if err != nil {
