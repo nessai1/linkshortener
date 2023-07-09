@@ -66,27 +66,33 @@ func (application *Application) handleAddURL(writer http.ResponseWriter, request
 		return
 	}
 
+	scheme := "http://"
+	if request.TLS != nil {
+		scheme = "https://"
+	}
+	link := scheme + application.GetAddr() + "/" + hash
+
 	writer.Header().Set("Content-Type", "text/plain")
 	writer.WriteHeader(http.StatusCreated)
-	writer.Write([]byte(hash))
+	writer.Write([]byte(link))
 	return
 }
 
-func (application *Application) handleGetURL(w http.ResponseWriter, r *http.Request) {
-	token := r.URL.Path[1:]
+func (application *Application) handleGetURL(writer http.ResponseWriter, request *http.Request) {
+	token := request.URL.Path[1:]
 	if token == "" {
-		w.WriteHeader(http.StatusNotFound)
+		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
 
 	URI, ok := application.links[token]
 	if !ok {
-		w.WriteHeader(http.StatusNotFound)
+		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	w.Header().Set("Location", URI)
-	w.WriteHeader(http.StatusTemporaryRedirect)
+	writer.Header().Set("Location", URI)
+	writer.WriteHeader(http.StatusTemporaryRedirect)
 	return
 }
 
