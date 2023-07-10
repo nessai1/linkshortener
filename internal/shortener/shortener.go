@@ -72,11 +72,7 @@ func (application *Application) handleAddURL(writer http.ResponseWriter, request
 		return
 	}
 
-	scheme := "http://"
-	if request.TLS != nil {
-		scheme = "https://"
-	}
-	link := scheme + application.GetAddr() + "/" + hash
+	link := application.buildTokenTail(request) + hash
 
 	writer.Header().Set("Content-Type", "text/plain")
 	writer.WriteHeader(http.StatusCreated)
@@ -107,6 +103,18 @@ func validateURL(url []byte) bool {
 	}
 
 	return res
+}
+
+func (application *Application) buildTokenTail(request *http.Request) string {
+	if configTail := application.config.TokenTail; configTail != "" {
+		return configTail + "/"
+	}
+
+	scheme := "http://"
+	if request.TLS != nil {
+		scheme = "https://"
+	}
+	return scheme + application.GetAddr() + "/"
 }
 
 func (application *Application) createResource(url string) (string, error) {

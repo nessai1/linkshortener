@@ -14,11 +14,13 @@ func GetConfig() *Config {
 
 func initConfig() *Config {
 	serverAddr := flag.String("a", "", "Address of application")
+	tokenTail := flag.String("b", "", "Left tail of token of shorted URL")
 
 	flag.Parse()
 
 	config := Config{
 		ServerAddr: *serverAddr,
+		TokenTail:  *tokenTail,
 	}
 
 	return &config
@@ -26,5 +28,5 @@ func initConfig() *Config {
 
 type Config struct {
 	ServerAddr string
-	HashTail   string
+	TokenTail  string
 }
