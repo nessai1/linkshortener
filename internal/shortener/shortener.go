@@ -3,6 +3,7 @@ package shortener
 import (
 	"github.com/go-chi/chi"
 	"github.com/nessai1/linkshortener/internal/app"
+	"github.com/nessai1/linkshortener/internal/shortener/config"
 	encoder "github.com/nessai1/linkshortener/internal/shortener/decoder"
 	"io"
 	"log"
@@ -12,14 +13,16 @@ import (
 
 func GetApplication() *Application {
 	application := Application{
-		links: map[string]string{},
+		links:  map[string]string{},
+		config: config.GetConfig(),
 	}
 
 	return &application
 }
 
 type Application struct {
-	links map[string]string
+	links  map[string]string
+	config *config.Config
 }
 
 func (application *Application) GetEndpoints() []app.Endpoint {
@@ -38,6 +41,10 @@ func (application *Application) GetEndpoints() []app.Endpoint {
 }
 
 func (application *Application) GetAddr() string {
+	if configAddr := config.GetConfig().ServerAddr; configAddr != "" {
+		return configAddr
+	}
+
 	return "localhost:8080"
 }
 
