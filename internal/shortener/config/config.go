@@ -1,6 +1,9 @@
 package config
 
-import "flag"
+import (
+	"flag"
+	"os"
+)
 
 var configInstance *Config
 
@@ -17,6 +20,14 @@ func initConfig() *Config {
 	tokenTail := flag.String("b", "", "Left tail of token of shorted URL")
 
 	flag.Parse()
+
+	if serverAddrEnv := os.Getenv("SERVER_ADDRESS"); serverAddrEnv != "" {
+		*serverAddr = serverAddrEnv
+	}
+
+	if tokenTailEnv := os.Getenv("BASE_URL"); tokenTailEnv != "" {
+		*tokenTail = tokenTailEnv
+	}
 
 	config := Config{
 		ServerAddr: *serverAddr,
