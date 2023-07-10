@@ -1,6 +1,7 @@
 package shortener
 
 import (
+	"github.com/go-chi/chi"
 	"github.com/nessai1/linkshortener/internal/app"
 	encoder "github.com/nessai1/linkshortener/internal/shortener/decoder"
 	"io"
@@ -24,16 +25,14 @@ type Application struct {
 func (application *Application) GetEndpoints() []app.Endpoint {
 	return []app.Endpoint{
 		{
-			URL: "/",
-			HandlerFunc: func(writer http.ResponseWriter, request *http.Request) {
-				if request.Method == http.MethodGet {
-					application.handleGetURL(writer, request)
-				} else if request.Method == http.MethodPost {
-					application.handleAddURL(writer, request)
-				} else {
-					writer.WriteHeader(http.StatusMethodNotAllowed)
-				}
-			},
+			URL:         "/{token}",
+			Method:      http.MethodGet,
+			HandlerFunc: application.handleGetURL,
+		},
+		{
+			URL:         "/",
+			Method:      http.MethodPost,
+			HandlerFunc: application.handleAddURL,
 		},
 	}
 }
@@ -78,7 +77,7 @@ func (application *Application) handleAddURL(writer http.ResponseWriter, request
 }
 
 func (application *Application) handleGetURL(writer http.ResponseWriter, request *http.Request) {
-	token := request.URL.Path[1:]
+	token := chi.URLParam(request, "token")
 	if token == "" {
 		writer.WriteHeader(http.StatusNotFound)
 		return

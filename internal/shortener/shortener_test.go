@@ -1,6 +1,8 @@
 package shortener
 
 import (
+	"context"
+	"github.com/go-chi/chi"
 	encoder "github.com/nessai1/linkshortener/internal/shortener/decoder"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -126,13 +128,14 @@ func TestApplication_handleGetURL(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodGet, serviceURL+tt.hash, nil)
+			r = addChiURLParams(r, map[string]string{"token": tt.hash})
 			w := httptest.NewRecorder()
 			app.handleGetURL(w, r)
 			res := w.Result()
 			defer res.Body.Close()
 
 			assert.Equalf(t, tt.wantedRequest.status, res.StatusCode,
-				"Invalid response status %s (%s expected)", res.StatusCode, tt.wantedRequest.status,
+				"Invalid response status %d (%d expected)", res.StatusCode, tt.wantedRequest.status,
 			)
 
 			assert.Equalf(t, tt.wantedRequest.location, res.Header.Get("Location"),
@@ -140,4 +143,13 @@ func TestApplication_handleGetURL(t *testing.T) {
 			)
 		})
 	}
+}
+
+func addChiURLParams(r *http.Request, params map[string]string) *http.Request {
+	ctx := chi.NewRouteContext()
+	for k, v := range params {
+		ctx.URLParams.Add(k, v)
+	}
+
+	return r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, ctx))
 }
