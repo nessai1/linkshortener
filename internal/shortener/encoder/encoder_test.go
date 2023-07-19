@@ -50,7 +50,7 @@ func TestEncodeURL(t *testing.T) {
 				require.NoErrorf(t, err, "Second encode of %s has error %s", tt.secondURL, err.Error())
 			}
 
-			assert.Equal(t, tt.hasCollision, firstToken == secondToken, "Encode of %s and %s has collisions (%s)", tt.firstURL, tt.secondURL, secondToken)
+			assert.Equalf(t, tt.hasCollision, firstToken == secondToken, "Encode of %s and %s has collisions (%s)", tt.firstURL, tt.secondURL, secondToken)
 		})
 	}
 }

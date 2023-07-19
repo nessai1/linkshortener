@@ -4,7 +4,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/nessai1/linkshortener/internal/app"
 	"github.com/nessai1/linkshortener/internal/shortener/config"
-	encoder "github.com/nessai1/linkshortener/internal/shortener/decoder"
+	encoder "github.com/nessai1/linkshortener/internal/shortener/encoder"
 	"io"
 	"log"
 	"net/http"
@@ -86,13 +86,13 @@ func (application *Application) handleGetURL(writer http.ResponseWriter, request
 		return
 	}
 
-	URI, ok := application.links[token]
+	uri, ok := application.links[token]
 	if !ok {
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	writer.Header().Set("Location", URI)
+	writer.Header().Set("Location", uri)
 	writer.WriteHeader(http.StatusTemporaryRedirect)
 }
 

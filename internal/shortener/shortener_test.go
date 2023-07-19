@@ -3,7 +3,7 @@ package shortener
 import (
 	"context"
 	"github.com/go-chi/chi"
-	encoder "github.com/nessai1/linkshortener/internal/shortener/decoder"
+	encoder "github.com/nessai1/linkshortener/internal/shortener/encoder"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"

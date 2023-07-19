@@ -4,10 +4,14 @@ import (
 	"github.com/speps/go-hashids"
 )
 
+const (
+	HashMinLength = 5
+)
+
 func EncodeURL(url string) (string, error) {
 	hd := hashids.NewData()
 	hd.Salt = url
-	hd.MinLength = 5
+	hd.MinLength = HashMinLength
 	h, err := hashids.NewWithData(hd)
 	if err != nil {
 		return "", err

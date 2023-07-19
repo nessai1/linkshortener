@@ -2,14 +2,15 @@ package app
 
 import (
 	"github.com/go-chi/chi"
-	"log"
 	"net/http"
 )
 
 func Run(handler ApplicationHandler) {
 	router := chi.NewRouter()
 	fillRouter(router, handler.GetEndpoints())
-	log.Fatalln(http.ListenAndServe(handler.GetAddr(), router))
+	if err := http.ListenAndServe(handler.GetAddr(), router); err != nil {
+		panic(err)
+	}
 }
 
 func fillRouter(router chi.Router, endpoints []Endpoint) {
