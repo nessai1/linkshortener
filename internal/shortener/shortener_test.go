@@ -19,7 +19,7 @@ func TestApplication_handleAddURL(t *testing.T) {
 		body   string
 	}
 
-	app := GetApplication()
+	app := GetApplication(&Config{})
 	serviceURL := "http://" + app.GetAddr() + "/"
 
 	testHash, err := encoder.EncodeURL("https://ya.ru")
@@ -91,7 +91,7 @@ func TestApplication_handleGetURL(t *testing.T) {
 		location string
 	}
 
-	app := GetApplication()
+	app := GetApplication(&Config{})
 	serviceURL := "http://" + app.GetAddr() + "/"
 	testURL := "https://ya.ru"
 	testHash, err := app.createResource(testURL)
