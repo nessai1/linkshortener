@@ -1,10 +1,10 @@
 package shortener
 
 import (
-	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/nessai1/linkshortener/internal/app"
 	encoder "github.com/nessai1/linkshortener/internal/shortener/encoder"
+	"go.uber.org/zap"
 	"io"
 	"log"
 	"net/http"
@@ -28,6 +28,7 @@ func GetApplication(config *Config) *Application {
 type Application struct {
 	links  map[string]string
 	config *Config
+	logger *zap.Logger
 }
 
 func (application *Application) GetEndpoints() []app.Endpoint {
@@ -51,6 +52,10 @@ func (application *Application) GetAddr() string {
 	}
 
 	return "localhost:8080"
+}
+
+func (application *Application) SetLogger(logger *zap.Logger) {
+	application.logger = logger
 }
 
 func (application *Application) handleAddURL(writer http.ResponseWriter, request *http.Request) {
@@ -85,7 +90,6 @@ func (application *Application) handleAddURL(writer http.ResponseWriter, request
 }
 
 func (application *Application) handleGetURL(writer http.ResponseWriter, request *http.Request) {
-	fmt.Println("GET URL")
 	token := chi.URLParam(request, "token")
 	if token == "" {
 		writer.WriteHeader(http.StatusNotFound)

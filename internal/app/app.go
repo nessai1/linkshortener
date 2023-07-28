@@ -3,18 +3,22 @@ package app
 import (
 	"fmt"
 	"github.com/go-chi/chi"
+	"go.uber.org/zap"
 	"net/http"
 )
 
 func Run(handler ApplicationHandler, envType EnvType) {
 	router := chi.NewRouter()
-	router.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			fmt.Println("Before")
-			next.ServeHTTP(writer, request)
-			fmt.Println("After")
-		})
-	})
+
+	logger, err := createAppLogger(envType)
+	if err != nil {
+		panic(fmt.Sprintf("Got error while creating application logger: %s", err.Error()))
+	}
+
+	defer logger.Sync()
+
+	handler.SetLogger(logger)
+	router.Use(getRequestLogMiddleware(logger))
 
 	fillRouter(router, handler.GetEndpoints())
 	if err := http.ListenAndServe(handler.GetAddr(), router); err != nil {
@@ -42,6 +46,10 @@ type Endpoint struct {
 type ApplicationHandler interface {
 	GetEndpoints() []Endpoint
 	GetAddr() string
+
+	// SetLogger TODO: выделить только необходимые функции логирования (функции Warn, Info etc.) в отдельный интерфейс.
+	// Таким образом уйдет зависимость от конкретной библиотки
+	SetLogger(logger *zap.Logger)
 }
 
 type EnvType uint8

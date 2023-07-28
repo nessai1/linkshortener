@@ -30,5 +30,5 @@ func initConfig() *shortener.Config {
 }
 
 func main() {
-	app.Run(shortener.GetApplication(initConfig()), app.Development)
+	app.Run(shortener.GetApplication(initConfig()), app.Stage)
 }
