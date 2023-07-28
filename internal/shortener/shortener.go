@@ -1,6 +1,7 @@
 package shortener
 
 import (
+	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/nessai1/linkshortener/internal/app"
 	encoder "github.com/nessai1/linkshortener/internal/shortener/encoder"
@@ -84,6 +85,7 @@ func (application *Application) handleAddURL(writer http.ResponseWriter, request
 }
 
 func (application *Application) handleGetURL(writer http.ResponseWriter, request *http.Request) {
+	fmt.Println("GET URL")
 	token := chi.URLParam(request, "token")
 	if token == "" {
 		writer.WriteHeader(http.StatusNotFound)
