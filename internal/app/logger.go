@@ -1,7 +1,6 @@
 package app
 
 import (
-	"errors"
 	"fmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -63,7 +62,7 @@ func getLogLevelByEnvType(envType EnvType) (zapcore.Level, error) {
 		return zapcore.DebugLevel, nil
 	}
 
-	return 0, errors.New(fmt.Sprintf("Unexpected EnvType got (%d)", envType))
+	return 0, fmt.Errorf("unexpected EnvType got (%d)", envType)
 }
 
 func getRequestLogMiddleware(logger *zap.Logger) func(handler http.Handler) http.Handler {
