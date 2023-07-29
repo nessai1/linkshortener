@@ -65,6 +65,7 @@ func getLogLevelByEnvType(envType EnvType) (zapcore.Level, error) {
 	return 0, fmt.Errorf("unexpected EnvType got (%d)", envType)
 }
 
+// TODO: change type for logger in future
 func getRequestLogMiddleware(logger *zap.Logger) func(handler http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
