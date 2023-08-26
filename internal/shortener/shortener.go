@@ -1,6 +1,7 @@
 package shortener
 
 import (
+	"fmt"
 	"github.com/go-chi/chi"
 	"github.com/nessai1/linkshortener/internal/app"
 	encoder "github.com/nessai1/linkshortener/internal/shortener/encoder"
@@ -43,6 +44,16 @@ func (application *Application) GetEndpoints() []app.Endpoint {
 			Method:      http.MethodPost,
 			HandlerFunc: application.handleAddURL,
 		},
+		{
+			URL: "/api",
+			Group: []app.Endpoint{
+				{
+					URL:         "/shorten",
+					Method:      http.MethodPost,
+					HandlerFunc: application.apiHandleAddURL,
+				},
+			},
+		},
 	}
 }
 
@@ -62,12 +73,14 @@ func (application *Application) handleAddURL(writer http.ResponseWriter, request
 
 	body, err := io.ReadAll(request.Body)
 	if err != nil {
+		application.logger.Debug(fmt.Sprintf("Client sends invalid request. (%s)", err.Error()))
 		writer.WriteHeader(http.StatusBadRequest)
 		writer.Write([]byte("Failed to read body."))
 		return
 	}
 
 	if !validateURL(body) {
+		application.logger.Debug(fmt.Sprintf("Client sends invalid url: %s", body))
 		writer.WriteHeader(http.StatusBadRequest)
 		writer.Write([]byte("Invalid pattern of given URI"))
 		return
@@ -75,6 +88,7 @@ func (application *Application) handleAddURL(writer http.ResponseWriter, request
 
 	hash, err := application.createResource(string(body))
 	if err != nil {
+		application.logger.Debug(fmt.Sprintf("Cannot create resource for \"%s\". (%s)", body, err.Error()))
 		log.Printf("Error while creating resource '%s'\n", body)
 
 		writer.WriteHeader(http.StatusInternalServerError)
@@ -87,21 +101,25 @@ func (application *Application) handleAddURL(writer http.ResponseWriter, request
 	writer.Header().Set("Content-Type", "text/plain")
 	writer.WriteHeader(http.StatusCreated)
 	writer.Write([]byte(link))
+	application.logger.Info(fmt.Sprintf("Client success add URL \"%s\"", link))
 }
 
 func (application *Application) handleGetURL(writer http.ResponseWriter, request *http.Request) {
 	token := chi.URLParam(request, "token")
 	if token == "" {
+		application.logger.Debug("Client sends empty request")
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
 
 	uri, ok := application.links[token]
 	if !ok {
+		application.logger.Debug(fmt.Sprintf("Link storage doesn't contain link \"%s\"", uri))
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
 
+	application.logger.Info(fmt.Sprintf("Client success redirected from token \"%s\" to \"%s\"", token, uri))
 	writer.Header().Set("Location", uri)
 	writer.WriteHeader(http.StatusTemporaryRedirect)
 }

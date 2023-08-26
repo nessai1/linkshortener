@@ -20,20 +20,28 @@ func Run(handler ApplicationHandler, envType EnvType) {
 	handler.SetLogger(logger)
 	router.Use(getRequestLogMiddleware(logger))
 
-	fillRouter(router, handler.GetEndpoints())
+	fillRouter(router, handler.GetEndpoints(), "")
+	logger.Info(fmt.Sprintf("staring server on addr: %s", handler.GetAddr()))
 	if err := http.ListenAndServe(handler.GetAddr(), router); err != nil {
 		panic(err)
 	}
 }
 
-func fillRouter(router chi.Router, endpoints []Endpoint) {
+func fillRouter(router chi.Router, endpoints []Endpoint, tail string) {
 	for _, endpoint := range endpoints {
+		if len(endpoint.Group) != 0 {
+			fillRouter(router, endpoint.Group, endpoint.URL)
+			continue
+		}
+
 		method := endpoint.Method
 		if method == "" {
 			method = http.MethodGet
 		}
 
-		router.MethodFunc(method, endpoint.URL, endpoint.HandlerFunc)
+		url := tail + endpoint.URL
+
+		router.MethodFunc(method, url, endpoint.HandlerFunc)
 	}
 }
 
@@ -41,6 +49,7 @@ type Endpoint struct {
 	URL         string
 	Method      string
 	HandlerFunc func(http.ResponseWriter, *http.Request)
+	Group       []Endpoint
 }
 
 type ApplicationHandler interface {
