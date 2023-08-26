@@ -11,7 +11,7 @@ type AddURLRequestBody struct {
 	URL string `json:"url"`
 }
 
-type AddUrlRequestResult struct {
+type AddURLRequestResult struct {
 	Result string `json:"result"`
 }
 
@@ -58,7 +58,7 @@ func (application *Application) apiHandleAddURL(writer http.ResponseWriter, requ
 
 	link := application.buildTokenTail(request) + hash
 
-	requestResult, _ := json.Marshal(AddUrlRequestResult{Result: link})
+	requestResult, _ := json.Marshal(AddURLRequestResult{Result: link})
 
 	application.logger.Info(fmt.Sprintf("Client successful add URL \"%s\" by API", requestBody.URL))
 	writer.Write(requestResult)
