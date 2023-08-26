@@ -61,6 +61,6 @@ func (application *Application) apiHandleAddURL(writer http.ResponseWriter, requ
 	requestResult, _ := json.Marshal(AddURLRequestResult{Result: link})
 
 	application.logger.Info(fmt.Sprintf("Client successful add URL \"%s\" by API", requestBody.URL))
-	writer.Write(requestResult)
 	writer.WriteHeader(http.StatusCreated)
+	writer.Write(requestResult)
 }
