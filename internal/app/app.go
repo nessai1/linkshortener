@@ -10,7 +10,7 @@ import (
 func Run(handler ApplicationHandler, envType EnvType) {
 	router := chi.NewRouter()
 
-	logger, err := createAppLogger(envType)
+	logger, err := CreateAppLogger(envType)
 	if err != nil {
 		panic(fmt.Sprintf("Got error while creating application logger: %s", err.Error()))
 	}

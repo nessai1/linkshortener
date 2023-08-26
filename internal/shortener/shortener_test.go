@@ -3,7 +3,8 @@ package shortener
 import (
 	"context"
 	"github.com/go-chi/chi"
-	encoder "github.com/nessai1/linkshortener/internal/shortener/encoder"
+	"github.com/nessai1/linkshortener/internal/app"
+	"github.com/nessai1/linkshortener/internal/shortener/encoder"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -19,8 +20,9 @@ func TestApplication_handleAddURL(t *testing.T) {
 		body   string
 	}
 
-	app := GetApplication(&Config{})
-	serviceURL := "http://" + app.GetAddr() + "/"
+	testingApp := GetApplication(&Config{})
+	testingApp.logger, _ = app.CreateAppLogger(app.Development)
+	serviceURL := "http://" + testingApp.GetAddr() + "/"
 
 	testHash, err := encoder.EncodeURL("https://ya.ru")
 	require.NoError(t, err, "Error while encoding test url")
@@ -68,7 +70,7 @@ func TestApplication_handleAddURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodPost, serviceURL, strings.NewReader(tt.addr))
 			w := httptest.NewRecorder()
-			app.handleAddURL(w, r)
+			testingApp.handleAddURL(w, r)
 			res := w.Result()
 
 			assert.Equalf(t, tt.wantedRequest.status, res.StatusCode,
@@ -91,10 +93,11 @@ func TestApplication_handleGetURL(t *testing.T) {
 		location string
 	}
 
-	app := GetApplication(&Config{})
-	serviceURL := "http://" + app.GetAddr() + "/"
+	testingApp := GetApplication(&Config{})
+	testingApp.logger, _ = app.CreateAppLogger(app.Development)
+	serviceURL := "http://" + testingApp.GetAddr() + "/"
 	testURL := "https://ya.ru"
-	testHash, err := app.createResource(testURL)
+	testHash, err := testingApp.createResource(testURL)
 	require.NoError(t, err, "Error while create test url")
 
 	tests := []struct {
@@ -130,7 +133,7 @@ func TestApplication_handleGetURL(t *testing.T) {
 			r := httptest.NewRequest(http.MethodGet, serviceURL+tt.hash, nil)
 			r = addChiURLParams(r, map[string]string{"token": tt.hash})
 			w := httptest.NewRecorder()
-			app.handleGetURL(w, r)
+			testingApp.handleGetURL(w, r)
 			res := w.Result()
 			defer res.Body.Close()
 

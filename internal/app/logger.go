@@ -32,7 +32,7 @@ func NewLoggingResponseWriter(w http.ResponseWriter) *loggingResponseWriter {
 	return &loggingResponseWriter{w, http.StatusOK, 0}
 }
 
-func createAppLogger(envType EnvType) (*zap.Logger, error) {
+func CreateAppLogger(envType EnvType) (*zap.Logger, error) {
 	atom := zap.NewAtomicLevel()
 
 	logLevel, err := getLogLevelByEnvType(envType)
