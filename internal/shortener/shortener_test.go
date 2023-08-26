@@ -25,9 +25,7 @@ func TestApplication_handleAddURL(t *testing.T) {
 	serviceURL := "http://" + testingApp.GetAddr() + "/"
 
 	testHash, err := encoder.EncodeURL("https://ya.ru")
-	mailRuHash, err2 := encoder.EncodeURL("mail.ru")
 	require.NoError(t, err, "Error while encoding test url")
-	require.NoError(t, err2, "Error while encoding no http cheme url")
 
 	tests := []struct {
 		name          string
@@ -52,11 +50,11 @@ func TestApplication_handleAddURL(t *testing.T) {
 			},
 		},
 		{
-			name: "No http adr",
-			addr: "mail.ru",
+			name: "No pattern addr",
+			addr: "ftp:mail.ru",
 			wantedRequest: request{
-				status: http.StatusCreated,
-				body:   serviceURL + mailRuHash,
+				status: http.StatusBadRequest,
+				body:   "Invalid pattern of given URI",
 			},
 		},
 		{

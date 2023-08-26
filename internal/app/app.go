@@ -19,7 +19,7 @@ func Run(handler ApplicationHandler, envType EnvType) {
 
 	handler.SetLogger(logger)
 	router.Use(getRequestLogMiddleware(logger))
-	router.Use(getZipMiddleware())
+	router.Use(getZipMiddleware(logger))
 
 	fillRouter(router, handler.GetEndpoints(), "")
 	logger.Info(fmt.Sprintf("staring server on addr: %s", handler.GetAddr()))

@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"regexp"
 )
 
 type Config struct {
@@ -118,21 +119,17 @@ func (application *Application) handleGetURL(writer http.ResponseWriter, request
 		return
 	}
 
-	application.logger.Info(fmt.Sprintf("Client success redirected from token \"%s\" to \"%s\"", token, uri))
+	application.logger.Info(fmt.Sprintf("Client success redirected from \"%s\" to \"%s\"", application.GetAddr()+"/"+token, uri))
 	writer.Header().Set("Location", uri)
 	writer.WriteHeader(http.StatusTemporaryRedirect)
 }
 
 func validateURL(url []byte) bool {
-	return len(url) != 0
-	// Автотесты хотят вообще все сувать в сервис, судя по трейсу ошибки. Пришлось убрать проверку.
-	//
-	//res, err := regexp.Match(`^https?://[^\s]+$`, url)
-	//if err != nil {
-	//	return false
-	//}
-	//
-	//return res
+	res, err := regexp.Match(`^https?://[^\s]+$`, url)
+	if err != nil {
+		return false
+	}
+	return res
 }
 
 func (application *Application) buildTokenTail(request *http.Request) string {
