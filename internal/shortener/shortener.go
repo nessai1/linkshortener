@@ -124,7 +124,7 @@ func (application *Application) handleGetURL(writer http.ResponseWriter, request
 }
 
 func validateURL(url []byte) bool {
-	return true
+	return len(url) != 0
 	// Автотесты хотят вообще все сувать в сервис, судя по трейсу ошибки. Пришлось убрать проверку.
 	//
 	//res, err := regexp.Match(`^https?://[^\s]+$`, url)
