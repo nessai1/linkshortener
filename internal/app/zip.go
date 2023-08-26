@@ -28,13 +28,14 @@ func getZipMiddleware(logger *zap.Logger) func(handler http.Handler) http.Handle
 			}
 
 			gz, err := gzip.NewWriterLevel(writer, gzip.BestSpeed)
-			defer gz.Close()
 			if err != nil {
 				logger.Fatal(fmt.Sprintf("Gzip encoding level doesn't work! Error: %s", err.Error()))
 				writer.WriteHeader(http.StatusInternalServerError)
 				writer.Write([]byte("Internal error while encode content to gzip: " + err.Error()))
 				return
 			}
+
+			defer gz.Close()
 
 			writer = gzipWriter{
 				ResponseWriter: writer,
