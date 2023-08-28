@@ -22,7 +22,12 @@ func TestApplication_handleAddURL(t *testing.T) {
 	}
 
 	tmpStorage, err := storage.CreateTempKVStorage()
-	defer tmpStorage.Close()
+	defer func() {
+		err = tmpStorage.Close()
+		if err != nil {
+			require.NoError(t, err, "Error while close temp storage!")
+		}
+	}()
 	if err != nil {
 		require.NoError(t, err, "Cannot create temp storage for testing")
 	}
@@ -101,7 +106,12 @@ func TestApplication_handleGetURL(t *testing.T) {
 	}
 
 	tmpStorage, err := storage.CreateTempKVStorage()
-	defer tmpStorage.Close()
+	defer func() {
+		err = tmpStorage.Close()
+		if err != nil {
+			require.NoError(t, err, "Error while close temp storage!")
+		}
+	}()
 	if err != nil {
 		require.NoError(t, err, "Cannot create temp storage for testing")
 	}
