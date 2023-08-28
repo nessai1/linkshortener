@@ -5,6 +5,9 @@ import (
 	"github.com/go-chi/chi"
 	"go.uber.org/zap"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 func Run(handler ApplicationHandler, envType EnvType) {
@@ -23,9 +26,20 @@ func Run(handler ApplicationHandler, envType EnvType) {
 
 	fillRouter(router, handler.GetEndpoints(), "")
 	logger.Info(fmt.Sprintf("staring server on addr: %s", handler.GetAddr()))
+
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		handler.OnBeforeClose()
+		os.Exit(1)
+	}()
+
 	if err := http.ListenAndServe(handler.GetAddr(), router); err != nil {
 		panic(err)
 	}
+
+	defer handler.OnBeforeClose()
 }
 
 func fillRouter(router chi.Router, endpoints []Endpoint, tail string) {
@@ -60,6 +74,8 @@ type ApplicationHandler interface {
 	// SetLogger TODO: выделить только необходимые функции логирования (функции Warn, Info etc.) в отдельный интерфейс.
 	// Таким образом уйдет зависимость от конкретной библиотки
 	SetLogger(logger *zap.Logger)
+
+	OnBeforeClose()
 }
 
 type EnvType uint8

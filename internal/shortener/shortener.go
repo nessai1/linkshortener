@@ -5,6 +5,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/nessai1/linkshortener/internal/app"
 	encoder "github.com/nessai1/linkshortener/internal/shortener/encoder"
+	"github.com/nessai1/linkshortener/internal/storage"
 	"go.uber.org/zap"
 	"io"
 	"log"
@@ -13,23 +14,24 @@ import (
 )
 
 type Config struct {
-	ServerAddr string
-	TokenTail  string
+	ServerAddr  string
+	TokenTail   string
+	StoragePath string
 }
 
-func GetApplication(config *Config) *Application {
+func GetApplication(config *Config, innerStorage *storage.KeyValueStorage) *Application {
 	application := Application{
-		links:  map[string]string{},
-		config: config,
+		config:  config,
+		storage: innerStorage,
 	}
 
 	return &application
 }
 
 type Application struct {
-	links  map[string]string
-	config *Config
-	logger *zap.Logger
+	config  *Config
+	logger  *zap.Logger
+	storage *storage.KeyValueStorage
 }
 
 func (application *Application) GetEndpoints() []app.Endpoint {
@@ -54,6 +56,16 @@ func (application *Application) GetEndpoints() []app.Endpoint {
 				},
 			},
 		},
+	}
+}
+
+func (application *Application) OnBeforeClose() {
+	application.logger.Info("Closing shorter application...")
+	err := application.storage.Close()
+	if err != nil {
+		application.logger.Error("Error while closing application storage")
+	} else {
+		application.logger.Info("Application storage is closed successful")
 	}
 }
 
@@ -112,7 +124,7 @@ func (application *Application) handleGetURL(writer http.ResponseWriter, request
 		return
 	}
 
-	uri, ok := application.links[token]
+	uri, ok := application.storage.Get(token)
 	if !ok {
 		application.logger.Debug(fmt.Sprintf("Link storage doesn't contain link \"%s\"", uri))
 		writer.WriteHeader(http.StatusNotFound)
@@ -150,7 +162,7 @@ func (application *Application) createResource(url string) (string, error) {
 		return "", err
 	}
 
-	application.links[hash] = url
+	application.storage.Set(hash, url)
 
 	return hash, nil
 }
