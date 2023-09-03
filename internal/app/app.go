@@ -2,15 +2,16 @@ package app
 
 import (
 	"fmt"
-	"github.com/go-chi/chi"
-	"go.uber.org/zap"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/go-chi/chi"
+	"go.uber.org/zap"
 )
 
-func Run(handler ApplicationHandler, envType EnvType) {
+func Run(application Application, envType EnvType) {
 	router := chi.NewRouter()
 
 	logger, err := CreateAppLogger(envType)
@@ -20,26 +21,31 @@ func Run(handler ApplicationHandler, envType EnvType) {
 
 	defer logger.Sync()
 
-	handler.SetLogger(logger)
-	router.Use(getRequestLogMiddleware(logger))
-	router.Use(getZipMiddleware(logger))
+	application.SetLogger(logger)
 
-	fillRouter(router, handler.GetEndpoints(), "")
-	logger.Info(fmt.Sprintf("staring server on addr: %s", handler.GetAddr()))
+	for _, controller := range application.GetControllers() {
+		router.Mount(controller.Path, controller.Mux)
+	}
+
+	//router.Use(getRequestLogMiddleware(logger))
+	//router.Use(getZipMiddleware(logger))
+	//
+	//fillRouter(router, application.GetEndpoints(), "")
+	logger.Info(fmt.Sprintf("staring server on addr: %s", application.GetAddr()))
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		handler.OnBeforeClose()
+		application.OnBeforeClose()
 		os.Exit(1)
 	}()
 
-	if err := http.ListenAndServe(handler.GetAddr(), router); err != nil {
+	if err := http.ListenAndServe(application.GetAddr(), router); err != nil {
 		panic(err)
 	}
 
-	defer handler.OnBeforeClose()
+	defer application.OnBeforeClose()
 }
 
 func fillRouter(router chi.Router, endpoints []Endpoint, tail string) {
@@ -67,7 +73,7 @@ type Endpoint struct {
 	Group       []Endpoint
 }
 
-type ApplicationHandler interface {
+type Application interface {
 	GetEndpoints() []Endpoint
 	GetAddr() string
 
@@ -76,6 +82,8 @@ type ApplicationHandler interface {
 	SetLogger(logger *zap.Logger)
 
 	OnBeforeClose()
+
+	GetControllers() []Controller
 }
 
 type EnvType uint8

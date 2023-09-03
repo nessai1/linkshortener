@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/go-chi/chi"
 	"net/http"
 )
 
@@ -63,4 +64,14 @@ func (application *Application) apiHandleAddURL(writer http.ResponseWriter, requ
 	application.logger.Info(fmt.Sprintf("Client success add URL \"%s\" by API", requestBody.URL))
 	writer.WriteHeader(http.StatusCreated)
 	writer.Write(requestResult)
+}
+
+func (application *Application) getAPIRouter() *chi.Mux {
+	router := chi.NewRouter()
+
+	router.Get("/some", func(writer http.ResponseWriter, request *http.Request) {
+		writer.Write([]byte("this is api controller"))
+	})
+
+	return router
 }

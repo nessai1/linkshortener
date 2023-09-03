@@ -81,6 +81,19 @@ func (application *Application) SetLogger(logger *zap.Logger) {
 	application.logger = logger
 }
 
+func (application *Application) GetControllers() []app.Controller {
+	return []app.Controller{
+		{
+			Mux:  application.getPublicRouter(),
+			Path: "/",
+		},
+		{
+			Mux:  application.getAPIRouter(),
+			Path: "/api",
+		},
+	}
+}
+
 func (application *Application) handleAddURL(writer http.ResponseWriter, request *http.Request) {
 
 	body, err := io.ReadAll(request.Body)
