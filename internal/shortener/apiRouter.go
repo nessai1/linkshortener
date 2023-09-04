@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/go-chi/chi"
+	"github.com/nessai1/linkshortener/internal/app"
 	"net/http"
+
+	"github.com/go-chi/chi"
 )
 
 type AddURLRequestBody struct {
@@ -69,9 +71,9 @@ func (application *Application) apiHandleAddURL(writer http.ResponseWriter, requ
 func (application *Application) getAPIRouter() *chi.Mux {
 	router := chi.NewRouter()
 
-	router.Get("/some", func(writer http.ResponseWriter, request *http.Request) {
-		writer.Write([]byte("this is api controller"))
-	})
+	router.Use(app.GetRequestLogMiddleware(application.logger, "API"))
+
+	router.Post("/shorten", application.apiHandleAddURL)
 
 	return router
 }

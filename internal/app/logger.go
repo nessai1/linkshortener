@@ -2,11 +2,12 @@ package app
 
 import (
 	"fmt"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"net/http"
 	"os"
 	"time"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type loggingResponseWriter struct {
@@ -66,7 +67,7 @@ func getLogLevelByEnvType(envType EnvType) (zapcore.Level, error) {
 }
 
 // TODO: change type for logger in future
-func getRequestLogMiddleware(logger *zap.Logger) func(handler http.Handler) http.Handler {
+func GetRequestLogMiddleware(logger *zap.Logger, prefix string) func(handler http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 			startTime := time.Now()
@@ -76,8 +77,8 @@ func getRequestLogMiddleware(logger *zap.Logger) func(handler http.Handler) http
 
 			duration := time.Since(startTime)
 
-			logger.Info(fmt.Sprintf("Request info: URI = '%s'\tMethod = %s\tDuration = %d", request.RequestURI, request.Method, duration))
-			logger.Info(fmt.Sprintf("Response info: URI = '%s'\tStatus = %d\tContent-Length = %d", request.RequestURI, lrw.statusCode, lrw.length))
+			logger.Info(fmt.Sprintf("[%s] Request info: URI = '%s'\tMethod = %s\tDuration = %d", prefix, request.RequestURI, request.Method, duration))
+			logger.Info(fmt.Sprintf("[%s] Response info: URI = '%s'\tStatus = %d\tContent-Length = %d", prefix, request.RequestURI, lrw.statusCode, lrw.length))
 		})
 	}
 }

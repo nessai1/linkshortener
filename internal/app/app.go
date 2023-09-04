@@ -23,12 +23,12 @@ func Run(application Application, envType EnvType) {
 
 	application.SetLogger(logger)
 
+	router.Use(getZipMiddleware(logger))
+
 	for _, controller := range application.GetControllers() {
 		router.Mount(controller.Path, controller.Mux)
 	}
 
-	//router.Use(getRequestLogMiddleware(logger))
-	//router.Use(getZipMiddleware(logger))
 	//
 	//fillRouter(router, application.GetEndpoints(), "")
 	logger.Info(fmt.Sprintf("staring server on addr: %s", application.GetAddr()))
