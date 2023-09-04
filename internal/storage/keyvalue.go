@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 )
 
 type KeyValueStorage struct {
-	physicalStorage *os.File
+	physicalStorage io.ReadWriteCloser
 	keyValueMap     map[string]string
 
 	isTemp     bool
@@ -33,8 +34,6 @@ func (storage *KeyValueStorage) Get(key string) (string, bool) {
 }
 
 func (storage *KeyValueStorage) Save() error {
-	storage.physicalStorage.Truncate(0)
-	storage.physicalStorage.Seek(0, 0)
 
 	kvstruct := make(keyValueStruct, 0)
 	for key, val := range storage.keyValueMap {
@@ -66,10 +65,6 @@ func (storage *KeyValueStorage) Close() error {
 		return err
 	}
 
-	if storage.isTemp {
-		os.Remove(storage.physicalStorage.Name())
-		os.Remove(storage.storageDir + "/")
-	}
 	return storage.physicalStorage.Close()
 }
 
@@ -89,6 +84,13 @@ func GetKVStorage(path string) (*KeyValueStorage, error) {
 	if err != nil {
 		return nil, err
 	}
+	file.Truncate(0)
+	file.Seek(0, 0)
+
+	file, err = os.OpenFile(path, os.O_RDWR|os.O_TRUNC, 0666)
+	if err != nil {
+		return nil, err
+	}
 
 	return &KeyValueStorage{
 		physicalStorage: file,
@@ -98,9 +100,9 @@ func GetKVStorage(path string) (*KeyValueStorage, error) {
 	}, nil
 }
 
-func fillMap(file *os.File) (map[string]string, error) {
+func fillMap(rwc io.ReadWriteCloser) (map[string]string, error) {
 	var buffer bytes.Buffer
-	nBytes, err := buffer.ReadFrom(file)
+	nBytes, err := buffer.ReadFrom(rwc)
 	if err != nil {
 		return nil, err
 	}
