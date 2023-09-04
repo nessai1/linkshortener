@@ -29,8 +29,6 @@ func Run(application Application, envType EnvType) {
 		router.Mount(controller.Path, controller.Mux)
 	}
 
-	//
-	//fillRouter(router, application.GetEndpoints(), "")
 	logger.Info(fmt.Sprintf("staring server on addr: %s", application.GetAddr()))
 
 	c := make(chan os.Signal, 1)
@@ -48,33 +46,7 @@ func Run(application Application, envType EnvType) {
 	defer application.OnBeforeClose()
 }
 
-func fillRouter(router chi.Router, endpoints []Endpoint, tail string) {
-	for _, endpoint := range endpoints {
-		if len(endpoint.Group) != 0 {
-			fillRouter(router, endpoint.Group, endpoint.URL)
-			continue
-		}
-
-		method := endpoint.Method
-		if method == "" {
-			method = http.MethodGet
-		}
-
-		url := tail + endpoint.URL
-
-		router.MethodFunc(method, url, endpoint.HandlerFunc)
-	}
-}
-
-type Endpoint struct {
-	URL         string
-	Method      string
-	HandlerFunc func(http.ResponseWriter, *http.Request)
-	Group       []Endpoint
-}
-
 type Application interface {
-	GetEndpoints() []Endpoint
 	GetAddr() string
 
 	// SetLogger TODO: выделить только необходимые функции логирования (функции Warn, Info etc.) в отдельный интерфейс.

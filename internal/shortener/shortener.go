@@ -31,31 +31,6 @@ type Application struct {
 	storage *storage.KeyValueStorage
 }
 
-func (application *Application) GetEndpoints() []app.Endpoint {
-	return []app.Endpoint{
-		{
-			URL:         "/{token}",
-			Method:      http.MethodGet,
-			HandlerFunc: application.handleGetURL,
-		},
-		{
-			URL:         "/",
-			Method:      http.MethodPost,
-			HandlerFunc: application.handleAddURL,
-		},
-		{
-			URL: "/api",
-			Group: []app.Endpoint{
-				{
-					URL:         "/shorten",
-					Method:      http.MethodPost,
-					HandlerFunc: application.apiHandleAddURL,
-				},
-			},
-		},
-	}
-}
-
 func (application *Application) OnBeforeClose() {
 	application.logger.Info("Closing shorter application...")
 	err := application.storage.Close()
