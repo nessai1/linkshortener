@@ -68,7 +68,7 @@ func (storage *KeyValueStorage) Close() error {
 	return storage.physicalStorage.Close()
 }
 
-func GetKVStorage(path string) (*KeyValueStorage, error) {
+func GetFileKVStorage(path string) (*KeyValueStorage, error) {
 	dirPath := filepath.Dir(path)
 	err := os.MkdirAll(dirPath, os.ModePerm)
 	if err != nil {

@@ -42,7 +42,7 @@ func main() {
 	var kvStorage *storage.KeyValueStorage
 	var err error
 	if config.StoragePath != "" {
-		kvStorage, err = storage.GetKVStorage(config.StoragePath)
+		kvStorage, err = storage.GetFileKVStorage(config.StoragePath)
 		if err != nil {
 			panic(fmt.Sprintf("Cannot open storage on path %s! Application is shutting down. (%s)", config.StoragePath, err.Error()))
 		}
