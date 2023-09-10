@@ -36,12 +36,6 @@ func initConfig() *shortener.Config {
 		*postgresConnParams = postgresConnParamsEnv
 	}
 
-	if *postgresConnParams == "" {
-		panic("No postgres params is not specified")
-	}
-
-	fmt.Println(*postgresConnParams)
-
 	db, err := sql.Open("pgx", *postgresConnParams)
 	if err != nil {
 		panic("Cannot create DB driver: " + err.Error())
