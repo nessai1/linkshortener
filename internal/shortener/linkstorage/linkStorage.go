@@ -24,6 +24,10 @@ func (storage *Storage) Get(key string) (string, bool) {
 	return val, ok
 }
 
+func (storage *Storage) Save() error {
+	return storage.driver.Save(storage.hashToLink)
+}
+
 func CreateStorage(driver StorageDriver) (*Storage, error) {
 	storage := Storage{
 		driver: driver,

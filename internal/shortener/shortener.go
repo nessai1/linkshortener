@@ -2,6 +2,8 @@ package shortener
 
 import (
 	"database/sql"
+	"fmt"
+	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
 	"net/http"
 	"regexp"
 
@@ -19,10 +21,18 @@ type Config struct {
 }
 
 func GetApplication(config *Config, innerStorage *storage.KeyValueStorage) *Application {
+
+	/// Возможно тут следует определять драйвер, в завис-ти от конфига
+	driver := linkstorage.InMemoryStorageDriver{}
+	lstorage, err := linkstorage.CreateStorage(&driver)
+	if err != nil {
+		panic(fmt.Sprintf("cannot create storage with driver: %s", err.Error()))
+	}
+
 	application := Application{
 		config:    config,
-		storage:   innerStorage,
 		SQLDriver: config.SQLDriver,
+		storage:   lstorage,
 	}
 
 	return &application
@@ -31,13 +41,13 @@ func GetApplication(config *Config, innerStorage *storage.KeyValueStorage) *Appl
 type Application struct {
 	config    *Config
 	logger    *zap.Logger
-	storage   *storage.KeyValueStorage
+	storage   *linkstorage.Storage
 	SQLDriver *sql.DB
 }
 
 func (application *Application) OnBeforeClose() {
 	application.logger.Info("Closing shorter application...")
-	err := application.storage.Close()
+	err := application.storage.Save()
 	if err != nil {
 		application.logger.Error("Error while closing application storage")
 	} else {
