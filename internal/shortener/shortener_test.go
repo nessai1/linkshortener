@@ -2,15 +2,18 @@ package shortener
 
 import (
 	"context"
-	"github.com/go-chi/chi"
-	encoder "github.com/nessai1/linkshortener/internal/shortener/encoder"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/nessai1/linkshortener/internal/app"
+	"github.com/nessai1/linkshortener/internal/shortener/encoder"
+	"github.com/nessai1/linkshortener/internal/storage"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/go-chi/chi"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestApplication_handleAddURL(t *testing.T) {
@@ -19,8 +22,20 @@ func TestApplication_handleAddURL(t *testing.T) {
 		body   string
 	}
 
-	app := GetApplication(&Config{})
-	serviceURL := "http://" + app.GetAddr() + "/"
+	tmpStorage, err := storage.CreateTempKVStorage()
+	defer func() {
+		err = tmpStorage.Close()
+		if err != nil {
+			require.NoError(t, err, "Error while close temp storage!")
+		}
+	}()
+	if err != nil {
+		require.NoError(t, err, "Cannot create temp storage for testing")
+	}
+
+	testingApp := GetApplication(&Config{}, tmpStorage)
+	testingApp.logger, _ = app.CreateAppLogger(app.Development)
+	serviceURL := "http://" + testingApp.GetAddr() + "/"
 
 	testHash, err := encoder.EncodeURL("https://ya.ru")
 	require.NoError(t, err, "Error while encoding test url")
@@ -68,7 +83,7 @@ func TestApplication_handleAddURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodPost, serviceURL, strings.NewReader(tt.addr))
 			w := httptest.NewRecorder()
-			app.handleAddURL(w, r)
+			testingApp.handleAddURL(w, r)
 			res := w.Result()
 
 			assert.Equalf(t, tt.wantedRequest.status, res.StatusCode,
@@ -91,10 +106,22 @@ func TestApplication_handleGetURL(t *testing.T) {
 		location string
 	}
 
-	app := GetApplication(&Config{})
-	serviceURL := "http://" + app.GetAddr() + "/"
+	tmpStorage, err := storage.CreateTempKVStorage()
+	defer func() {
+		err = tmpStorage.Close()
+		if err != nil {
+			require.NoError(t, err, "Error while close temp storage!")
+		}
+	}()
+	if err != nil {
+		require.NoError(t, err, "Cannot create temp storage for testing")
+	}
+
+	testingApp := GetApplication(&Config{}, tmpStorage)
+	testingApp.logger, _ = app.CreateAppLogger(app.Development)
+	serviceURL := "http://" + testingApp.GetAddr() + "/"
 	testURL := "https://ya.ru"
-	testHash, err := app.createResource(testURL)
+	testHash, err := testingApp.createResource(testURL)
 	require.NoError(t, err, "Error while create test url")
 
 	tests := []struct {
@@ -130,7 +157,7 @@ func TestApplication_handleGetURL(t *testing.T) {
 			r := httptest.NewRequest(http.MethodGet, serviceURL+tt.hash, nil)
 			r = addChiURLParams(r, map[string]string{"token": tt.hash})
 			w := httptest.NewRecorder()
-			app.handleGetURL(w, r)
+			testingApp.handleGetURL(w, r)
 			res := w.Result()
 			defer res.Body.Close()
 

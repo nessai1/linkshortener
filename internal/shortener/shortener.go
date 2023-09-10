@@ -1,46 +1,43 @@
 package shortener
 
 import (
-	"github.com/go-chi/chi"
-	"github.com/nessai1/linkshortener/internal/app"
-	encoder "github.com/nessai1/linkshortener/internal/shortener/encoder"
-	"io"
-	"log"
 	"net/http"
 	"regexp"
+
+	"github.com/nessai1/linkshortener/internal/app"
+	encoder "github.com/nessai1/linkshortener/internal/shortener/encoder"
+	"github.com/nessai1/linkshortener/internal/storage"
+	"go.uber.org/zap"
 )
 
 type Config struct {
-	ServerAddr string
-	TokenTail  string
+	ServerAddr  string
+	TokenTail   string
+	StoragePath string
 }
 
-func GetApplication(config *Config) *Application {
+func GetApplication(config *Config, innerStorage *storage.KeyValueStorage) *Application {
 	application := Application{
-		links:  map[string]string{},
-		config: config,
+		config:  config,
+		storage: innerStorage,
 	}
 
 	return &application
 }
 
 type Application struct {
-	links  map[string]string
-	config *Config
+	config  *Config
+	logger  *zap.Logger
+	storage *storage.KeyValueStorage
 }
 
-func (application *Application) GetEndpoints() []app.Endpoint {
-	return []app.Endpoint{
-		{
-			URL:         "/{token}",
-			Method:      http.MethodGet,
-			HandlerFunc: application.handleGetURL,
-		},
-		{
-			URL:         "/",
-			Method:      http.MethodPost,
-			HandlerFunc: application.handleAddURL,
-		},
+func (application *Application) OnBeforeClose() {
+	application.logger.Info("Closing shorter application...")
+	err := application.storage.Close()
+	if err != nil {
+		application.logger.Error("Error while closing application storage")
+	} else {
+		application.logger.Info("Application storage is closed successful")
 	}
 }
 
@@ -52,52 +49,21 @@ func (application *Application) GetAddr() string {
 	return "localhost:8080"
 }
 
-func (application *Application) handleAddURL(writer http.ResponseWriter, request *http.Request) {
-
-	body, err := io.ReadAll(request.Body)
-	if err != nil {
-		writer.WriteHeader(http.StatusBadRequest)
-		writer.Write([]byte("Failed to read body."))
-		return
-	}
-
-	if !validateURL(body) {
-		writer.WriteHeader(http.StatusBadRequest)
-		writer.Write([]byte("Invalid pattern of given URI"))
-		return
-	}
-
-	hash, err := application.createResource(string(body))
-	if err != nil {
-		log.Printf("Error while creating resource '%s'\n", body)
-
-		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte("Error while creating resource!"))
-		return
-	}
-
-	link := application.buildTokenTail(request) + hash
-
-	writer.Header().Set("Content-Type", "text/plain")
-	writer.WriteHeader(http.StatusCreated)
-	writer.Write([]byte(link))
+func (application *Application) SetLogger(logger *zap.Logger) {
+	application.logger = logger
 }
 
-func (application *Application) handleGetURL(writer http.ResponseWriter, request *http.Request) {
-	token := chi.URLParam(request, "token")
-	if token == "" {
-		writer.WriteHeader(http.StatusNotFound)
-		return
+func (application *Application) GetControllers() []app.Controller {
+	return []app.Controller{
+		{
+			Mux:  application.getPublicRouter(),
+			Path: "/",
+		},
+		{
+			Mux:  application.getAPIRouter(),
+			Path: "/api",
+		},
 	}
-
-	uri, ok := application.links[token]
-	if !ok {
-		writer.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	writer.Header().Set("Location", uri)
-	writer.WriteHeader(http.StatusTemporaryRedirect)
 }
 
 func validateURL(url []byte) bool {
@@ -105,7 +71,6 @@ func validateURL(url []byte) bool {
 	if err != nil {
 		return false
 	}
-
 	return res
 }
 
@@ -127,7 +92,7 @@ func (application *Application) createResource(url string) (string, error) {
 		return "", err
 	}
 
-	application.links[hash] = url
+	application.storage.Set(hash, url)
 
 	return hash, nil
 }
