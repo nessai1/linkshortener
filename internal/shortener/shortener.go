@@ -15,14 +15,14 @@ type Config struct {
 	ServerAddr  string
 	TokenTail   string
 	StoragePath string
-	SqlDriver   *sql.DB
+	SQLDriver   *sql.DB
 }
 
 func GetApplication(config *Config, innerStorage *storage.KeyValueStorage) *Application {
 	application := Application{
 		config:    config,
 		storage:   innerStorage,
-		sqlDriver: config.SqlDriver,
+		SQLDriver: config.SQLDriver,
 	}
 
 	return &application
@@ -32,7 +32,7 @@ type Application struct {
 	config    *Config
 	logger    *zap.Logger
 	storage   *storage.KeyValueStorage
-	sqlDriver *sql.DB
+	SQLDriver *sql.DB
 }
 
 func (application *Application) OnBeforeClose() {

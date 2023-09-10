@@ -45,7 +45,7 @@ func initConfig() *shortener.Config {
 		ServerAddr:  *serverAddr,
 		TokenTail:   *tokenTail,
 		StoragePath: *storageFilePath,
-		SqlDriver:   db,
+		SQLDriver:   db,
 	}
 
 	return &config
@@ -53,7 +53,7 @@ func initConfig() *shortener.Config {
 
 func main() {
 	config := initConfig()
-	defer config.SqlDriver.Close()
+	defer config.SQLDriver.Close()
 
 	var kvStorage *storage.KeyValueStorage
 	var err error

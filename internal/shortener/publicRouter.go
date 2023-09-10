@@ -66,7 +66,7 @@ func (application *Application) handleGetURL(writer http.ResponseWriter, request
 }
 
 func (application *Application) handleCheckDBStatus(writer http.ResponseWriter, request *http.Request) {
-	driverIsOk := application.sqlDriver.Ping() == nil
+	driverIsOk := application.SQLDriver.Ping() == nil
 	if !driverIsOk {
 		writer.WriteHeader(http.StatusInternalServerError)
 	} else {
