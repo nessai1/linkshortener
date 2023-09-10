@@ -65,6 +65,15 @@ func (application *Application) handleGetURL(writer http.ResponseWriter, request
 	writer.WriteHeader(http.StatusTemporaryRedirect)
 }
 
+func (application *Application) handleCheckDBStatus(writer http.ResponseWriter, request *http.Request) {
+	driverIsOk := application.sqlDriver.Ping() == nil
+	if !driverIsOk {
+		writer.WriteHeader(http.StatusInternalServerError)
+	} else {
+		writer.WriteHeader(http.StatusOK)
+	}
+}
+
 func (application *Application) getPublicRouter() *chi.Mux {
 	router := chi.NewRouter()
 
@@ -72,6 +81,7 @@ func (application *Application) getPublicRouter() *chi.Mux {
 
 	router.Post("/", application.handleAddURL)
 	router.Get("/{token}", application.handleGetURL)
+	router.Get("/ping", application.handleCheckDBStatus)
 
 	return router
 }

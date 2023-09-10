@@ -1,18 +1,22 @@
 package main
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
 	"github.com/nessai1/linkshortener/internal/app"
 	"github.com/nessai1/linkshortener/internal/shortener"
 	"github.com/nessai1/linkshortener/internal/storage"
 	"os"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func initConfig() *shortener.Config {
 	serverAddr := flag.String("a", "", "Address of application")
 	tokenTail := flag.String("b", "", "Left tail of token of shorted URL")
 	storageFilePath := flag.String("f", "./tmp/short-url-db.json", "Path to file storage")
+	postgresConnParams := flag.String("d", "", "Connection params for postgres")
 
 	flag.Parse()
 
@@ -28,10 +32,26 @@ func initConfig() *shortener.Config {
 		*storageFilePath = storageFilePathEnv
 	}
 
+	if postgresConnParamsEnv := os.Getenv("DATABASE_DSN"); postgresConnParamsEnv != "" {
+		*postgresConnParams = postgresConnParamsEnv
+	}
+
+	if *postgresConnParams == "" {
+		panic("No postgres params is not specified")
+	}
+
+	fmt.Println(*postgresConnParams)
+
+	db, err := sql.Open("pgx", *postgresConnParams)
+	if err != nil {
+		panic("Cannot create DB driver: " + err.Error())
+	}
+
 	config := shortener.Config{
 		ServerAddr:  *serverAddr,
 		TokenTail:   *tokenTail,
 		StoragePath: *storageFilePath,
+		SqlDriver:   db,
 	}
 
 	return &config
@@ -39,6 +59,8 @@ func initConfig() *shortener.Config {
 
 func main() {
 	config := initConfig()
+	defer config.SqlDriver.Close()
+
 	var kvStorage *storage.KeyValueStorage
 	var err error
 	if config.StoragePath != "" {
