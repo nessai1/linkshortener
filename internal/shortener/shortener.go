@@ -9,22 +9,19 @@ import (
 
 	"github.com/nessai1/linkshortener/internal/app"
 	encoder "github.com/nessai1/linkshortener/internal/shortener/encoder"
-	"github.com/nessai1/linkshortener/internal/storage"
 	"go.uber.org/zap"
 )
 
 type Config struct {
-	ServerAddr  string
-	TokenTail   string
-	StoragePath string
-	SQLDriver   *sql.DB
+	ServerAddr    string
+	TokenTail     string
+	StorageDriver linkstorage.StorageDriver
+	SQLDriver     *sql.DB
 }
 
-func GetApplication(config *Config, innerStorage *storage.KeyValueStorage) *Application {
+func GetApplication(config *Config) *Application {
 
-	/// Возможно тут следует определять драйвер, в завис-ти от конфига
-	driver := linkstorage.InMemoryStorageDriver{}
-	lstorage, err := linkstorage.CreateStorage(&driver)
+	lstorage, err := linkstorage.CreateStorage(config.StorageDriver)
 	if err != nil {
 		panic(fmt.Sprintf("cannot create storage with driver: %s", err.Error()))
 	}
@@ -106,7 +103,10 @@ func (application *Application) createResource(url string) (string, error) {
 		return "", err
 	}
 
-	application.storage.Set(hash, url)
+	err = application.storage.Set(hash, url)
+	if err != nil {
+		return "", err
+	}
 
 	return hash, nil
 }

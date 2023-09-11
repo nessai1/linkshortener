@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/nessai1/linkshortener/internal/app"
 	"github.com/nessai1/linkshortener/internal/shortener/encoder"
-	"github.com/nessai1/linkshortener/internal/storage"
+	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -22,18 +22,7 @@ func TestApplication_handleAddURL(t *testing.T) {
 		body   string
 	}
 
-	tmpStorage, err := storage.CreateTempKVStorage()
-	defer func() {
-		err = tmpStorage.Close()
-		if err != nil {
-			require.NoError(t, err, "Error while close temp storage!")
-		}
-	}()
-	if err != nil {
-		require.NoError(t, err, "Cannot create temp storage for testing")
-	}
-
-	testingApp := GetApplication(&Config{}, tmpStorage)
+	testingApp := GetApplication(&Config{StorageDriver: &linkstorage.InMemoryStorageDriver{}})
 	testingApp.logger, _ = app.CreateAppLogger(app.Development)
 	serviceURL := "http://" + testingApp.GetAddr() + "/"
 
@@ -106,18 +95,7 @@ func TestApplication_handleGetURL(t *testing.T) {
 		location string
 	}
 
-	tmpStorage, err := storage.CreateTempKVStorage()
-	defer func() {
-		err = tmpStorage.Close()
-		if err != nil {
-			require.NoError(t, err, "Error while close temp storage!")
-		}
-	}()
-	if err != nil {
-		require.NoError(t, err, "Cannot create temp storage for testing")
-	}
-
-	testingApp := GetApplication(&Config{}, tmpStorage)
+	testingApp := GetApplication(&Config{StorageDriver: &linkstorage.InMemoryStorageDriver{}})
 	testingApp.logger, _ = app.CreateAppLogger(app.Development)
 	serviceURL := "http://" + testingApp.GetAddr() + "/"
 	testURL := "https://ya.ru"

@@ -4,8 +4,15 @@ import "fmt"
 
 type HashToLink map[string]string
 
+type keyValueRow struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type keyValueStruct []keyValueRow
+
 type StorageDriver interface {
-	Set(key string, val string)
+	Set(key string, val string) error
 	Get(key string) (string, bool)
 
 	Save() error
@@ -17,8 +24,8 @@ type Storage struct {
 	driver StorageDriver
 }
 
-func (storage *Storage) Set(key string, val string) {
-	storage.driver.Set(key, val)
+func (storage *Storage) Set(key string, val string) error {
+	return storage.driver.Set(key, val)
 }
 
 func (storage *Storage) Get(key string) (string, bool) {

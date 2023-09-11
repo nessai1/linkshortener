@@ -4,8 +4,10 @@ type InMemoryStorageDriver struct {
 	hl HashToLink
 }
 
-func (driver *InMemoryStorageDriver) Set(key string, val string) {
+func (driver *InMemoryStorageDriver) Set(key string, val string) error {
 	driver.hl[key] = val
+
+	return nil
 }
 
 func (driver *InMemoryStorageDriver) Get(key string) (string, bool) {

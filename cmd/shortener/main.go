@@ -3,10 +3,9 @@ package main
 import (
 	"database/sql"
 	"flag"
-	"fmt"
 	"github.com/nessai1/linkshortener/internal/app"
 	"github.com/nessai1/linkshortener/internal/shortener"
-	"github.com/nessai1/linkshortener/internal/storage"
+	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
 	"os"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -41,11 +40,21 @@ func initConfig() *shortener.Config {
 		panic("Cannot create DB driver: " + err.Error())
 	}
 
+	var storageDriver linkstorage.StorageDriver
+
+	if *postgresConnParams != "" {
+		storageDriver = &linkstorage.PSQLStorageDriver{SQLDriver: db}
+	} else if *storageFilePath != "" {
+		storageDriver = &linkstorage.DiskStorageDriver{Path: *storageFilePath}
+	} else {
+		storageDriver = &linkstorage.InMemoryStorageDriver{}
+	}
+
 	config := shortener.Config{
-		ServerAddr:  *serverAddr,
-		TokenTail:   *tokenTail,
-		StoragePath: *storageFilePath,
-		SQLDriver:   db,
+		ServerAddr:    *serverAddr,
+		TokenTail:     *tokenTail,
+		SQLDriver:     db,
+		StorageDriver: storageDriver,
 	}
 
 	return &config
@@ -55,19 +64,5 @@ func main() {
 	config := initConfig()
 	defer config.SQLDriver.Close()
 
-	var kvStorage *storage.KeyValueStorage
-	var err error
-	if config.StoragePath != "" {
-		kvStorage, err = storage.GetFileKVStorage(config.StoragePath)
-		if err != nil {
-			panic(fmt.Sprintf("Cannot open storage on path %s! Application is shutting down. (%s)", config.StoragePath, err.Error()))
-		}
-	} else {
-		kvStorage, err = storage.CreateTempKVStorage()
-		if err != nil {
-			panic(fmt.Sprintf("Cannot create temp storage! Application is shutting down. (%s)", err.Error()))
-		}
-	}
-
-	app.Run(shortener.GetApplication(config, kvStorage), app.Stage)
+	app.Run(shortener.GetApplication(config), app.Development)
 }
