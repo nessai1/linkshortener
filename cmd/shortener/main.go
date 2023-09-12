@@ -62,7 +62,6 @@ func initConfig() *shortener.Config {
 
 func main() {
 	config := initConfig()
-	defer config.SQLDriver.Close()
 
 	app.Run(shortener.GetApplication(config), app.Development)
 }

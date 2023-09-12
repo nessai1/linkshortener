@@ -44,7 +44,7 @@ func (driver *PSQLStorageDriver) Load() error {
 }
 
 func (driver *PSQLStorageDriver) Close() error {
-	return nil
+	return driver.SQLDriver.Close()
 }
 
 func initTableIfNotExists(sqlDriver *sql.DB) error {
