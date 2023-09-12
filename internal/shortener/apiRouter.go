@@ -3,8 +3,10 @@ package shortener
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/nessai1/linkshortener/internal/app"
+	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -65,11 +67,15 @@ func (application *Application) apiHandleAddURL(writer http.ResponseWriter, requ
 
 	hash, err := application.createResource(requestBody.URL)
 	if err != nil {
-		application.logger.Debug(fmt.Sprintf("Cannot create resource for \"%s\". %s", requestBody.URL, err.Error()))
-		errorAnswer := BadRequest{ErrorMsg: fmt.Sprintf("Error while creating resource '%s'", requestBody.URL)}
-		rs, _ := json.Marshal(errorAnswer)
-		writer.Write(rs)
-		writer.WriteHeader(http.StatusBadRequest)
+
+		if errors.Is(err, linkstorage.URLIntersectionError) {
+			writer.WriteHeader(http.StatusConflict)
+			application.logger.Debug(fmt.Sprintf("User insert dublicate url: %s", requestBody.URL))
+		} else {
+			writer.WriteHeader(http.StatusInternalServerError)
+			application.logger.Debug(fmt.Sprintf("Cannot create resource for \"%s\". (%s)", requestBody.URL, err.Error()))
+			application.logger.Error(fmt.Sprintf("Error while creating resource '%s'\n", requestBody.URL))
+		}
 		return
 	}
 

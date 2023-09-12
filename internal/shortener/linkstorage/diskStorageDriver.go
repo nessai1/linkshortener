@@ -14,6 +14,11 @@ type DiskStorageDriver struct {
 }
 
 func (driver *DiskStorageDriver) Set(key string, val string) error {
+	_, ok := driver.hl[key]
+	if ok {
+		return URLIntersectionError
+	}
+
 	driver.hl[key] = val
 
 	return nil

@@ -1,6 +1,9 @@
 package linkstorage
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 type HashToLink map[string]string
 
@@ -8,6 +11,8 @@ type keyValueRow struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
 }
+
+var URLIntersectionError = errors.New("inserting URL not uniqe")
 
 type keyValueStruct []keyValueRow
 

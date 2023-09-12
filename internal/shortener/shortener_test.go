@@ -42,13 +42,12 @@ func TestApplication_handleAddURL(t *testing.T) {
 				body:   serviceURL + testHash,
 			},
 		},
-		// Проверяем, что при повторной попытке записать адрес - отдает тот же ответ
 		{
 			name: "Existing addr",
 			addr: "https://ya.ru",
 			wantedRequest: request{
-				status: http.StatusCreated,
-				body:   serviceURL + testHash,
+				status: http.StatusConflict,
+				body:   "",
 			},
 		},
 		{

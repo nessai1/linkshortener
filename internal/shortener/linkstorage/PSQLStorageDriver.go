@@ -13,7 +13,7 @@ type PSQLStorageDriver struct {
 func (driver *PSQLStorageDriver) Set(key string, val string) error {
 	_, ok := driver.Get(key)
 	if ok {
-		return nil
+		return URLIntersectionError
 	}
 
 	_, err := driver.preparedInsert.Exec(key, val)

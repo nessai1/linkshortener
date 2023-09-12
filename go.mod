@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/go-chi/chi v1.5.4
+	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/speps/go-hashids v2.0.0+incompatible
 	github.com/stretchr/testify v1.8.4

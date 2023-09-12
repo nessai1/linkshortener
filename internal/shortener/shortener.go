@@ -8,7 +8,7 @@ import (
 	"regexp"
 
 	"github.com/nessai1/linkshortener/internal/app"
-	encoder "github.com/nessai1/linkshortener/internal/shortener/encoder"
+	"github.com/nessai1/linkshortener/internal/shortener/encoder"
 	"go.uber.org/zap"
 )
 
