@@ -6,7 +6,8 @@ import (
 )
 
 type PSQLStorageDriver struct {
-	SQLDriver *sql.DB
+	SQLDriver      *sql.DB
+	preparedInsert *sql.Stmt
 }
 
 func (driver *PSQLStorageDriver) Set(key string, val string) error {
@@ -15,7 +16,7 @@ func (driver *PSQLStorageDriver) Set(key string, val string) error {
 		return nil
 	}
 
-	_, err := driver.SQLDriver.Exec("INSERT INTO hash_link (HASH, LINK) VALUES ($1, $2)", key, val)
+	_, err := driver.preparedInsert.Exec(key, val)
 	return err
 }
 
@@ -40,10 +41,21 @@ func (driver *PSQLStorageDriver) Load() error {
 		return initErr
 	}
 
+	var prepareErr error
+	driver.preparedInsert, prepareErr = driver.SQLDriver.Prepare("INSERT INTO hash_link (HASH, LINK) VALUES ($1, $2)")
+	if prepareErr != nil {
+		return prepareErr
+	}
+
 	return nil
 }
 
 func (driver *PSQLStorageDriver) Close() error {
+	err := driver.preparedInsert.Close()
+	if err != nil {
+		return err
+	}
+
 	return driver.SQLDriver.Close()
 }
 

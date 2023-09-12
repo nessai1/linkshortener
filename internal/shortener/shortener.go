@@ -72,7 +72,7 @@ func (application *Application) GetControllers() []app.Controller {
 		},
 		{
 			Mux:  application.getAPIRouter(),
-			Path: "/api",
+			Path: "/api/shorten",
 		},
 	}
 }
