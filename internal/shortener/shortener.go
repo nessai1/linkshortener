@@ -2,6 +2,7 @@ package shortener
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
 	"net/http"
@@ -104,9 +105,9 @@ func (application *Application) createResource(url string) (string, error) {
 	}
 
 	err = application.storage.Set(hash, url)
-	if err != nil {
+	if err != nil && !errors.Is(err, linkstorage.ErrURLIntersection) {
 		return "", err
 	}
 
-	return hash, nil
+	return hash, err
 }

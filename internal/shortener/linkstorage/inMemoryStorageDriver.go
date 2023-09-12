@@ -7,7 +7,7 @@ type InMemoryStorageDriver struct {
 func (driver *InMemoryStorageDriver) Set(key string, val string) error {
 	_, ok := driver.hl[key]
 	if ok {
-		return URLIntersectionError
+		return ErrURLIntersection
 	}
 
 	driver.hl[key] = val

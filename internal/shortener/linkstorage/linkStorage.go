@@ -12,7 +12,7 @@ type keyValueRow struct {
 	Value string `json:"value"`
 }
 
-var URLIntersectionError = errors.New("inserting URL not uniqe")
+var ErrURLIntersection = errors.New("inserting URL not uniqe")
 
 type keyValueStruct []keyValueRow
 

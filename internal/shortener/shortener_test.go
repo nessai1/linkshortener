@@ -47,7 +47,7 @@ func TestApplication_handleAddURL(t *testing.T) {
 			addr: "https://ya.ru",
 			wantedRequest: request{
 				status: http.StatusConflict,
-				body:   "",
+				body:   serviceURL + testHash,
 			},
 		},
 		{

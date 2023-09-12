@@ -68,15 +68,15 @@ func (application *Application) apiHandleAddURL(writer http.ResponseWriter, requ
 	hash, err := application.createResource(requestBody.URL)
 	if err != nil {
 
-		if errors.Is(err, linkstorage.URLIntersectionError) {
+		if errors.Is(err, linkstorage.ErrURLIntersection) {
 			writer.WriteHeader(http.StatusConflict)
 			application.logger.Debug(fmt.Sprintf("User insert dublicate url: %s", requestBody.URL))
 		} else {
 			writer.WriteHeader(http.StatusInternalServerError)
 			application.logger.Debug(fmt.Sprintf("Cannot create resource for \"%s\". (%s)", requestBody.URL, err.Error()))
 			application.logger.Error(fmt.Sprintf("Error while creating resource '%s'\n", requestBody.URL))
+			return
 		}
-		return
 	}
 
 	link := application.buildTokenTail(request) + hash
