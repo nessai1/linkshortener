@@ -101,8 +101,8 @@ func (application *Application) apiHandleAddBatchURL(writer http.ResponseWriter,
 
 	tx, err := application.SQLDriver.Begin()
 	if err != nil {
-		s := struct{ errorMsg string }{
-			errorMsg: fmt.Sprintf("Error while make transaction: %s", err.Error()),
+		s := BadRequest{
+			ErrorMsg: fmt.Sprintf("Error while make transaction: %s", err.Error()),
 		}
 
 		bt, _ := json.Marshal(s)
@@ -145,8 +145,8 @@ func (application *Application) apiHandleAddBatchURL(writer http.ResponseWriter,
 
 	err = tx.Commit()
 	if err != nil {
-		s := struct{ errorMsg string }{
-			errorMsg: fmt.Sprintf("Error while commit transaction: %s", err.Error()),
+		s := BadRequest{
+			ErrorMsg: fmt.Sprintf("Error while commit transaction: %s", err.Error()),
 		}
 
 		bt, _ := json.Marshal(s)
