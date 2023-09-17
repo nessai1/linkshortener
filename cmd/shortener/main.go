@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/nessai1/linkshortener/internal/app"
@@ -50,6 +51,10 @@ func initConfig() *shortener.Config {
 
 	if *postgresConnParams != "" {
 		storageDriver = &linkstorage.PSQLStorageDriver{SQLDriver: db}
+		err = initMigrations(db)
+		if err != nil && !errors.Is(err, migrate.ErrNoChange) {
+			panic(err)
+		}
 	} else if *storageFilePath != "" {
 		storageDriver = &linkstorage.DiskStorageDriver{Path: *storageFilePath}
 	} else {
@@ -82,10 +87,6 @@ func initMigrations(db *sql.DB) error {
 
 func main() {
 	config := initConfig()
-	migrationErr := initMigrations(config.SQLDriver)
-	if migrationErr != nil {
-		panic(migrationErr)
-	}
 
 	app.Run(shortener.GetApplication(config), app.Development)
 }
