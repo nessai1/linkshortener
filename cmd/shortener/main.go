@@ -82,7 +82,11 @@ func initMigrations(db *sql.DB) error {
 		return fmt.Errorf("error while create migrations: %s", err.Error())
 	}
 
-	return migrations.Up()
+	if err = migrations.Up(); err != nil {
+		return err
+	}
+
+	return driver.Close()
 }
 
 func main() {
