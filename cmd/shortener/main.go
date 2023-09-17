@@ -3,12 +3,18 @@ package main
 import (
 	"database/sql"
 	"flag"
+	"fmt"
 	"github.com/nessai1/linkshortener/internal/app"
 	"github.com/nessai1/linkshortener/internal/shortener"
 	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
 	"os"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 func initConfig() *shortener.Config {
@@ -60,8 +66,26 @@ func initConfig() *shortener.Config {
 	return &config
 }
 
+func initMigrations(db *sql.DB) error {
+	driver, err := postgres.WithInstance(db, &postgres.Config{})
+	if err != nil {
+		return err
+	}
+
+	migrations, err := migrate.NewWithDatabaseInstance("file:migrations", "postgres", driver)
+	if err != nil {
+		return fmt.Errorf("error while create migrations: %s", err.Error())
+	}
+
+	return migrations.Up()
+}
+
 func main() {
 	config := initConfig()
+	migrationErr := initMigrations(config.SQLDriver)
+	if migrationErr != nil {
+		panic(migrationErr)
+	}
 
 	app.Run(shortener.GetApplication(config), app.Development)
 }
