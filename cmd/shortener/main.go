@@ -86,7 +86,7 @@ func initMigrations(db *sql.DB) error {
 		return err
 	}
 
-	return driver.Close()
+	return nil
 }
 
 func main() {
