@@ -2,7 +2,6 @@ package linkstorage
 
 import (
 	"database/sql"
-	"fmt"
 )
 
 type PSQLStorageDriver struct {
@@ -36,11 +35,6 @@ func (driver *PSQLStorageDriver) Save() error {
 }
 
 func (driver *PSQLStorageDriver) Load() error {
-	initErr := initTableIfNotExists(driver.SQLDriver)
-	if initErr != nil {
-		return initErr
-	}
-
 	var prepareErr error
 	driver.preparedInsert, prepareErr = driver.SQLDriver.Prepare("INSERT INTO hash_link (HASH, LINK) VALUES ($1, $2)")
 	if prepareErr != nil {
@@ -59,15 +53,27 @@ func (driver *PSQLStorageDriver) Close() error {
 	return driver.SQLDriver.Close()
 }
 
-func initTableIfNotExists(sqlDriver *sql.DB) error {
-	if err := sqlDriver.Ping(); err != nil {
-		return fmt.Errorf("cannot check table exists, no DB ping: %s", err.Error())
+func (driver *PSQLStorageDriver) Ping() (bool, error) {
+	connectionStatus := driver.SQLDriver.Ping()
+	if connectionStatus == nil {
+		return true, nil
 	}
 
-	_, err := sqlDriver.Exec("CREATE TABLE IF NOT EXISTS hash_link (ID serial PRIMARY KEY, HASH varchar(255) NOT NULL UNIQUE, LINK varchar(255) NOT NULL)")
+	return false, connectionStatus
+}
+
+func (driver *PSQLStorageDriver) LoadBatch(batch []KeyValueRow) error {
+	tx, err := driver.SQLDriver.Begin()
 	if err != nil {
-		return fmt.Errorf("cannot create database: %s", err.Error())
+		return err
 	}
 
-	return nil
+	for _, item := range batch {
+		err := driver.Set(item.Key, item.Value)
+		if err != nil {
+			return tx.Rollback()
+		}
+	}
+
+	return tx.Commit()
 }

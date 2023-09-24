@@ -18,7 +18,14 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
-func initConfig() *shortener.Config {
+type InitConfig struct {
+	ServerAddr      string
+	TokenTail       string
+	SqlConnection   string
+	FileStoragePath string
+}
+
+func fetchConfig() InitConfig {
 	serverAddr := flag.String("a", "", "Address of application")
 	tokenTail := flag.String("b", "", "Left tail of token of shorted URL")
 	storageFilePath := flag.String("f", "./tmp/short-url-db.json", "Path to file storage")
@@ -42,33 +49,12 @@ func initConfig() *shortener.Config {
 		*postgresConnParams = postgresConnParamsEnv
 	}
 
-	db, err := sql.Open("pgx", *postgresConnParams)
-	if err != nil {
-		panic("Cannot create DB driver: " + err.Error())
+	return InitConfig{
+		ServerAddr:      *serverAddr,
+		TokenTail:       *tokenTail,
+		SqlConnection:   *postgresConnParams,
+		FileStoragePath: *storageFilePath,
 	}
-
-	var storageDriver linkstorage.StorageDriver
-
-	if *postgresConnParams != "" {
-		storageDriver = &linkstorage.PSQLStorageDriver{SQLDriver: db}
-		err = initMigrations(db)
-		if err != nil && !errors.Is(err, migrate.ErrNoChange) {
-			panic(err)
-		}
-	} else if *storageFilePath != "" {
-		storageDriver = &linkstorage.DiskStorageDriver{Path: *storageFilePath}
-	} else {
-		storageDriver = &linkstorage.InMemoryStorageDriver{}
-	}
-
-	config := shortener.Config{
-		ServerAddr:    *serverAddr,
-		TokenTail:     *tokenTail,
-		SQLDriver:     db,
-		StorageDriver: storageDriver,
-	}
-
-	return &config
 }
 
 func initMigrations(db *sql.DB) error {
@@ -89,8 +75,41 @@ func initMigrations(db *sql.DB) error {
 	return nil
 }
 
-func main() {
-	config := initConfig()
+func chooseDriver(config *InitConfig) (*linkstorage.StorageDriver, error) {
+	var storageDriver linkstorage.StorageDriver
 
-	app.Run(shortener.GetApplication(config), app.Development)
+	if config.SqlConnection != "" {
+		db, err := sql.Open("pgx", config.SqlConnection)
+		if err != nil {
+			return nil, err
+		}
+
+		storageDriver = &linkstorage.PSQLStorageDriver{SQLDriver: db}
+		err = initMigrations(db)
+		if err != nil && !errors.Is(err, migrate.ErrNoChange) {
+			panic(err)
+		}
+	} else if config.FileStoragePath != "" {
+		storageDriver = &linkstorage.DiskStorageDriver{Path: config.FileStoragePath}
+	} else {
+		storageDriver = &linkstorage.InMemoryStorageDriver{}
+	}
+
+	return &storageDriver, nil
+}
+
+func main() {
+	config := fetchConfig()
+	storageDriver, err := chooseDriver(&config)
+	if err != nil {
+		panic(err)
+	}
+
+	shortenerConfig := shortener.Config{
+		ServerAddr:    config.ServerAddr,
+		TokenTail:     config.TokenTail,
+		StorageDriver: *storageDriver,
+	}
+
+	app.Run(shortener.GetApplication(&shortenerConfig), app.Development)
 }

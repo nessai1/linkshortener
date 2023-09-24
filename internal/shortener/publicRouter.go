@@ -69,9 +69,11 @@ func (application *Application) handleGetURL(writer http.ResponseWriter, request
 	writer.WriteHeader(http.StatusTemporaryRedirect)
 }
 
-func (application *Application) handleCheckDBStatus(writer http.ResponseWriter, request *http.Request) {
-	driverIsOk := application.SQLDriver.Ping() == nil
+func (application *Application) handleCheckStorageStatus(writer http.ResponseWriter, request *http.Request) {
+	driverIsOk, err := application.storage.Ping()
+
 	if !driverIsOk {
+		application.logger.Info("Error while ping storage: " + err.Error())
 		writer.WriteHeader(http.StatusInternalServerError)
 	} else {
 		writer.WriteHeader(http.StatusOK)
@@ -85,7 +87,7 @@ func (application *Application) getPublicRouter() *chi.Mux {
 
 	router.Post("/", application.handleAddURL)
 	router.Get("/{token}", application.handleGetURL)
-	router.Get("/ping", application.handleCheckDBStatus)
+	router.Get("/ping", application.handleCheckStorageStatus)
 
 	return router
 }

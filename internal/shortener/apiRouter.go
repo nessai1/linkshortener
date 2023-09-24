@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/nessai1/linkshortener/internal/app"
+	"github.com/nessai1/linkshortener/internal/shortener/encoder"
 	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
 	"net/http"
 
@@ -105,21 +106,9 @@ func (application *Application) apiHandleAddBatchURL(writer http.ResponseWriter,
 		return
 	}
 
-	tx, err := application.SQLDriver.Begin()
-	if err != nil {
-		s := BadRequest{
-			ErrorMsg: fmt.Sprintf("Error while make transaction: %s", err.Error()),
-		}
-
-		bt, _ := json.Marshal(s)
-
-		writer.Write(bt)
-		writer.WriteHeader(http.StatusInternalServerError)
-	}
-
-	responseBody := make(BatchResponse, 0)
-
-	for _, item := range requestBody {
+	innerKWRows := make([]linkstorage.KeyValueRow, len(requestBody))
+	expectedResult := make(BatchResponse, len(requestBody))
+	for i, item := range requestBody {
 		if !validateURL([]byte(item.OriginalURL)) {
 			msg := fmt.Sprintf("Client sends invalid URL \"%s\" in batch item %s.", item.OriginalURL, item.CorrelationID)
 			application.logger.Debug(msg)
@@ -127,43 +116,39 @@ func (application *Application) apiHandleAddBatchURL(writer http.ResponseWriter,
 			rs, _ := json.Marshal(errorAnswer)
 			writer.Write(rs)
 			writer.WriteHeader(http.StatusBadRequest)
-			tx.Rollback()
-			return
 		}
-
-		hash, err := application.createResource(item.OriginalURL)
+		hash, err := encoder.EncodeURL(item.OriginalURL)
 		if err != nil {
-			msg := fmt.Sprintf("Error while create resource \"%s\" in batch item %s. (%s)", item.OriginalURL, item.CorrelationID, err.Error())
-			application.logger.Error(msg)
+			msg := fmt.Sprintf("Error while hashing URL \"%s\": %s.", item.OriginalURL, err.Error())
+			application.logger.Debug(msg)
 			errorAnswer := BadRequest{ErrorMsg: msg}
 			rs, _ := json.Marshal(errorAnswer)
 			writer.Write(rs)
 			writer.WriteHeader(http.StatusInternalServerError)
-			tx.Rollback()
-			return
 		}
 
-		responseBody = append(responseBody, BatchItemResponse{
+		innerKWRows[i] = linkstorage.KeyValueRow{
+			Key:   hash,
+			Value: item.OriginalURL,
+		}
+		expectedResult[i] = BatchItemResponse{
 			CorrelationID: item.CorrelationID,
 			ShortURL:      application.buildTokenTail(request) + hash,
-		})
+		}
 	}
 
-	err = tx.Commit()
-	if err != nil {
-		s := BadRequest{
-			ErrorMsg: fmt.Sprintf("Error while commit transaction: %s", err.Error()),
-		}
-
-		bt, _ := json.Marshal(s)
-
-		writer.Write(bt)
+	if err = application.storage.LoadBatch(innerKWRows); err != nil {
+		msg := fmt.Sprintf("Error while loading batch: %s.", err.Error())
+		application.logger.Debug(msg)
+		errorAnswer := BadRequest{ErrorMsg: msg}
+		rs, _ := json.Marshal(errorAnswer)
+		writer.Write(rs)
 		writer.WriteHeader(http.StatusInternalServerError)
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
 
-	requestResult, _ := json.Marshal(responseBody)
+	requestResult, _ := json.Marshal(expectedResult)
 
 	application.logger.Info(fmt.Sprintf("Client success add batch with %d URLs  by API", len(requestBody)))
 	writer.WriteHeader(http.StatusCreated)

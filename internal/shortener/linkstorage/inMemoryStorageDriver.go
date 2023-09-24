@@ -29,6 +29,28 @@ func (driver *InMemoryStorageDriver) Load() error {
 	return nil
 }
 
+func (driver *InMemoryStorageDriver) Ping() (bool, error) {
+	return true, nil
+}
+
+func (driver *InMemoryStorageDriver) LoadBatch(items []KeyValueRow) error {
+	hasIntersections := false
+	for _, item := range items {
+		_, ok := driver.hl[item.Key]
+		if ok && !hasIntersections {
+			hasIntersections = true
+		} else {
+			driver.hl[item.Key] = item.Value
+		}
+	}
+
+	if hasIntersections {
+		return ErrURLIntersection
+	}
+
+	return nil
+}
+
 func (driver *InMemoryStorageDriver) Close() error {
 	return nil
 }

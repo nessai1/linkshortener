@@ -35,7 +35,7 @@ func (driver *DiskStorageDriver) Save() error {
 		if key == "" || val == "" {
 			continue
 		}
-		kvstruct = append(kvstruct, keyValueRow{
+		kvstruct = append(kvstruct, KeyValueRow{
 			Key:   key,
 			Value: val,
 		})
@@ -92,6 +92,28 @@ func (driver *DiskStorageDriver) Load() error {
 
 func (driver *DiskStorageDriver) Close() error {
 	return driver.Save()
+}
+
+func (driver *DiskStorageDriver) Ping() (bool, error) {
+	return true, nil
+}
+
+func (driver *DiskStorageDriver) LoadBatch(items []KeyValueRow) error {
+	hasIntersections := false
+	for _, item := range items {
+		_, ok := driver.hl[item.Key]
+		if ok && !hasIntersections {
+			hasIntersections = true
+		} else {
+			driver.hl[item.Key] = item.Value
+		}
+	}
+
+	if hasIntersections {
+		return ErrURLIntersection
+	}
+
+	return nil
 }
 
 func openFile(path string, write bool) (*os.File, error) {

@@ -1,15 +1,14 @@
 package shortener
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/nessai1/linkshortener/internal/app"
+	"github.com/nessai1/linkshortener/internal/shortener/encoder"
 	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
 	"net/http"
 	"regexp"
 
-	"github.com/nessai1/linkshortener/internal/app"
-	"github.com/nessai1/linkshortener/internal/shortener/encoder"
 	"go.uber.org/zap"
 )
 
@@ -17,7 +16,6 @@ type Config struct {
 	ServerAddr    string
 	TokenTail     string
 	StorageDriver linkstorage.StorageDriver
-	SQLDriver     *sql.DB
 }
 
 func GetApplication(config *Config) *Application {
@@ -28,19 +26,17 @@ func GetApplication(config *Config) *Application {
 	}
 
 	application := Application{
-		config:    config,
-		SQLDriver: config.SQLDriver,
-		storage:   lstorage,
+		config:  config,
+		storage: lstorage,
 	}
 
 	return &application
 }
 
 type Application struct {
-	config    *Config
-	logger    *zap.Logger
-	storage   *linkstorage.Storage
-	SQLDriver *sql.DB
+	config  *Config
+	logger  *zap.Logger
+	storage *linkstorage.Storage
 }
 
 func (application *Application) OnBeforeClose() {
@@ -78,14 +74,6 @@ func (application *Application) GetControllers() []app.Controller {
 	}
 }
 
-func validateURL(url []byte) bool {
-	res, err := regexp.Match(`^https?://[^\s]+$`, url)
-	if err != nil {
-		return false
-	}
-	return res
-}
-
 func (application *Application) buildTokenTail(request *http.Request) string {
 	if configTail := application.config.TokenTail; configTail != "" {
 		return configTail + "/"
@@ -110,4 +98,12 @@ func (application *Application) createResource(url string) (string, error) {
 	}
 
 	return hash, err
+}
+
+func validateURL(url []byte) bool {
+	res, err := regexp.Match(`^https?://[^\s]+$`, url)
+	if err != nil {
+		return false
+	}
+	return res
 }
