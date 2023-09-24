@@ -21,7 +21,7 @@ import (
 type InitConfig struct {
 	ServerAddr      string
 	TokenTail       string
-	SqlConnection   string
+	SQLConnection   string
 	FileStoragePath string
 }
 
@@ -52,7 +52,7 @@ func fetchConfig() InitConfig {
 	return InitConfig{
 		ServerAddr:      *serverAddr,
 		TokenTail:       *tokenTail,
-		SqlConnection:   *postgresConnParams,
+		SQLConnection:   *postgresConnParams,
 		FileStoragePath: *storageFilePath,
 	}
 }
@@ -78,8 +78,8 @@ func initMigrations(db *sql.DB) error {
 func chooseDriver(config *InitConfig) (*linkstorage.StorageDriver, error) {
 	var storageDriver linkstorage.StorageDriver
 
-	if config.SqlConnection != "" {
-		db, err := sql.Open("pgx", config.SqlConnection)
+	if config.SQLConnection != "" {
+		db, err := sql.Open("pgx", config.SQLConnection)
 		if err != nil {
 			return nil, err
 		}
