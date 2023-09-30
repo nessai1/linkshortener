@@ -34,6 +34,9 @@ func (storage *Storage) Set(link string, val string) error {
 		return ErrURLIntersection
 	}
 	storage.hl[link] = val
+	if storage.driver != nil {
+		return storage.Save()
+	}
 
 	return nil
 }
