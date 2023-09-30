@@ -35,7 +35,7 @@ func Run(application Application, envType EnvType) {
 	go func() {
 		<-c
 		application.OnBeforeClose()
-		return
+		os.Exit(0)
 	}()
 
 	if err := http.ListenAndServe(application.GetAddr(), router); err != nil {
