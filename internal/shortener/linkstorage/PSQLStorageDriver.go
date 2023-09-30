@@ -5,51 +5,59 @@ import (
 )
 
 type PSQLStorageDriver struct {
-	SQLDriver      *sql.DB
-	preparedInsert *sql.Stmt
+	SQLDriver *sql.DB
 }
 
-func (driver *PSQLStorageDriver) Set(key string, val string) error {
-	_, ok := driver.Get(key)
-	if ok {
-		return ErrURLIntersection
-	}
-
-	_, err := driver.preparedInsert.Exec(key, val)
-	return err
-}
-
-func (driver *PSQLStorageDriver) Get(key string) (string, bool) {
-	row := driver.SQLDriver.QueryRow("SELECT LINK FROM hash_link WHERE HASH = $1", key)
-
-	var hash string
-	if row.Scan(&hash) == sql.ErrNoRows {
-		return "", false
-	}
-
-	return hash, true
-}
-
-func (driver *PSQLStorageDriver) Save() error {
-	return nil
-}
-
-func (driver *PSQLStorageDriver) Load() error {
-	var prepareErr error
-	driver.preparedInsert, prepareErr = driver.SQLDriver.Prepare("INSERT INTO hash_link (HASH, LINK) VALUES ($1, $2)")
+func (driver *PSQLStorageDriver) Save(hl HashToLink) error {
+	preparedInsert, prepareErr := driver.SQLDriver.Prepare("INSERT INTO hash_link (HASH, LINK) VALUES ($1, $2) ON CONFLICT DO NOTHING")
 	if prepareErr != nil {
 		return prepareErr
 	}
 
-	return nil
-}
-
-func (driver *PSQLStorageDriver) Close() error {
-	err := driver.preparedInsert.Close()
+	tx, err := driver.SQLDriver.Begin()
 	if err != nil {
 		return err
 	}
 
+	for key, val := range hl {
+		_, err = preparedInsert.Exec(key, val)
+		if err != nil {
+			return tx.Rollback()
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return preparedInsert.Close()
+}
+
+func (driver *PSQLStorageDriver) Load() (HashToLink, error) {
+	hl := make(HashToLink, 0)
+
+	rows, err := driver.SQLDriver.Query("SELECT hash, link FROM hash_link")
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	kvrow := KeyValueRow{}
+	for rows.Next() {
+		err = rows.Scan(&kvrow.Key, &kvrow.Value)
+		if err != nil {
+			return nil, err
+		}
+
+		hl[kvrow.Key] = kvrow.Value
+	}
+
+	return hl, nil
+}
+
+func (driver *PSQLStorageDriver) Close() error {
 	return driver.SQLDriver.Close()
 }
 
@@ -60,20 +68,4 @@ func (driver *PSQLStorageDriver) Ping() (bool, error) {
 	}
 
 	return false, connectionStatus
-}
-
-func (driver *PSQLStorageDriver) LoadBatch(batch []KeyValueRow) error {
-	tx, err := driver.SQLDriver.Begin()
-	if err != nil {
-		return err
-	}
-
-	for _, item := range batch {
-		err := driver.Set(item.Key, item.Value)
-		if err != nil {
-			return tx.Rollback()
-		}
-	}
-
-	return tx.Commit()
 }

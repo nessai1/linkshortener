@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/nessai1/linkshortener/internal/app"
 	"github.com/nessai1/linkshortener/internal/shortener/encoder"
-	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -22,7 +21,7 @@ func TestApplication_handleAddURL(t *testing.T) {
 		body   string
 	}
 
-	testingApp := GetApplication(&Config{StorageDriver: &linkstorage.InMemoryStorageDriver{}})
+	testingApp := GetApplication(&Config{StorageDriver: nil})
 	testingApp.logger, _ = app.CreateAppLogger(app.Development)
 	serviceURL := "http://" + testingApp.GetAddr() + "/"
 
@@ -94,7 +93,7 @@ func TestApplication_handleGetURL(t *testing.T) {
 		location string
 	}
 
-	testingApp := GetApplication(&Config{StorageDriver: &linkstorage.InMemoryStorageDriver{}})
+	testingApp := GetApplication(&Config{StorageDriver: nil})
 	testingApp.logger, _ = app.CreateAppLogger(app.Development)
 	serviceURL := "http://" + testingApp.GetAddr() + "/"
 	testURL := "https://ya.ru"

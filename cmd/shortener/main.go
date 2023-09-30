@@ -75,7 +75,7 @@ func initMigrations(db *sql.DB) error {
 	return nil
 }
 
-func chooseDriver(config *InitConfig) (*linkstorage.StorageDriver, error) {
+func chooseDriver(config *InitConfig) (linkstorage.StorageDriver, error) {
 	var storageDriver linkstorage.StorageDriver
 
 	if config.SQLConnection != "" {
@@ -92,10 +92,10 @@ func chooseDriver(config *InitConfig) (*linkstorage.StorageDriver, error) {
 	} else if config.FileStoragePath != "" {
 		storageDriver = &linkstorage.DiskStorageDriver{Path: config.FileStoragePath}
 	} else {
-		storageDriver = &linkstorage.InMemoryStorageDriver{}
+		storageDriver = nil
 	}
 
-	return &storageDriver, nil
+	return storageDriver, nil
 }
 
 func main() {
@@ -108,7 +108,7 @@ func main() {
 	shortenerConfig := shortener.Config{
 		ServerAddr:    config.ServerAddr,
 		TokenTail:     config.TokenTail,
-		StorageDriver: *storageDriver,
+		StorageDriver: storageDriver,
 	}
 
 	app.Run(shortener.GetApplication(&shortenerConfig), app.Development)

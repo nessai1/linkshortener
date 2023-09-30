@@ -17,39 +17,54 @@ var ErrURLIntersection = errors.New("inserting URL not unique")
 type keyValueStruct []KeyValueRow
 
 type StorageDriver interface {
-	Set(key string, val string) error
-	Get(key string) (string, bool)
-	Ping() (bool, error)
-	LoadBatch([]KeyValueRow) error
-
-	Save() error
-	Load() error
+	Save(HashToLink) error
+	Load() (HashToLink, error)
 	Close() error
+	Ping() (bool, error)
 }
 
 type Storage struct {
 	driver StorageDriver
+	hl     HashToLink
 }
 
 func (storage *Storage) Set(link string, val string) error {
-	return storage.driver.Set(link, val)
+	_, ok := storage.hl[link]
+	if ok {
+		return ErrURLIntersection
+	}
+	storage.hl[link] = val
+
+	return nil
 }
 
 func (storage *Storage) Get(link string) (string, bool) {
-	val, ok := storage.driver.Get(link)
+	val, ok := storage.hl[link]
 	return val, ok
 }
 
 func (storage *Storage) Save() error {
-	return storage.driver.Save()
+	if storage.driver != nil {
+		return storage.driver.Save(storage.hl)
+	}
+
+	return nil
 }
 
 func (storage *Storage) Ping() (bool, error) {
-	return storage.driver.Ping()
+	if storage.driver != nil {
+		return storage.driver.Ping()
+	}
+
+	return true, nil
 }
 
 func (storage *Storage) LoadBatch(items []KeyValueRow) error {
-	return storage.driver.LoadBatch(items)
+	for _, item := range items {
+		storage.hl[item.Key] = item.Value
+	}
+
+	return nil
 }
 
 func CreateStorage(driver StorageDriver) (*Storage, error) {
@@ -57,9 +72,15 @@ func CreateStorage(driver StorageDriver) (*Storage, error) {
 		driver: driver,
 	}
 
-	err := storage.driver.Load()
-	if err != nil {
-		return nil, fmt.Errorf("cannot load data from driver: %s", err.Error())
+	if driver != nil {
+		hl, err := storage.driver.Load()
+		if err != nil {
+			return nil, fmt.Errorf("cannot load data from driver: %s", err.Error())
+		}
+
+		storage.hl = hl
+	} else {
+		storage.hl = make(map[string]string, 0)
 	}
 
 	return &storage, nil

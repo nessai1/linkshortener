@@ -2,13 +2,12 @@ package app
 
 import (
 	"fmt"
+	"github.com/go-chi/chi"
+	"go.uber.org/zap"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/go-chi/chi"
-	"go.uber.org/zap"
 )
 
 func Run(application Application, envType EnvType) {
@@ -42,7 +41,6 @@ func Run(application Application, envType EnvType) {
 	if err := http.ListenAndServe(application.GetAddr(), router); err != nil {
 		panic(err)
 	}
-
 	defer application.OnBeforeClose()
 }
 
