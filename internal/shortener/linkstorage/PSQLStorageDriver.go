@@ -46,6 +46,9 @@ func (driver *PSQLStorageDriver) Load() (HashToLink, error) {
 
 	kvrow := KeyValueRow{}
 	for rows.Next() {
+		if err = rows.Err(); err != nil {
+			return nil, err
+		}
 		err = rows.Scan(&kvrow.Key, &kvrow.Value)
 		if err != nil {
 			return nil, err
