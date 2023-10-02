@@ -106,8 +106,6 @@ func chooseDriver(config *InitConfig) (linkstorage.StorageDriver, error) {
 		}
 	} else if config.FileStoragePath != "" {
 		storageDriver = &linkstorage.DiskStorageDriver{Path: config.FileStoragePath}
-	} else {
-		storageDriver = nil
 	}
 
 	return storageDriver, nil
