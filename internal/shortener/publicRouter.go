@@ -11,7 +11,6 @@ import (
 )
 
 func (application *Application) handleAddURL(writer http.ResponseWriter, request *http.Request) {
-
 	body, err := io.ReadAll(request.Body)
 	if err != nil {
 		application.logger.Debug(fmt.Sprintf("Client sends invalid request. (%s)", err.Error()))

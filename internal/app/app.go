@@ -24,6 +24,7 @@ func Run(application Application, envType EnvType) {
 	application.SetLogger(logger)
 
 	router.Use(getZipMiddleware(logger))
+	router.Use(getAuthMiddleware(logger))
 
 	for _, controller := range application.GetControllers() {
 		router.Mount(controller.Path, controller.Mux)

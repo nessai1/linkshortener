@@ -1,0 +1,2 @@
+ALTER TABLE hash_link ADD COLUMN OWNER_UUID UUID NULL;
+CREATE INDEX hash_link_owner_uuid ON hash_link (OWNER_UUID);

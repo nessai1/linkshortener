@@ -66,7 +66,6 @@ func getLogLevelByEnvType(envType EnvType) (zapcore.Level, error) {
 	return 0, fmt.Errorf("unexpected EnvType got (%d)", envType)
 }
 
-// TODO: change type for logger in future
 func GetRequestLogMiddleware(logger *zap.Logger, prefix string) func(handler http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -77,7 +76,15 @@ func GetRequestLogMiddleware(logger *zap.Logger, prefix string) func(handler htt
 
 			duration := time.Since(startTime)
 
-			logger.Info(fmt.Sprintf("[%s] Request info: URI = '%s'\tMethod = %s\tDuration = %d", prefix, request.RequestURI, request.Method, duration))
+			userUUIDCookie, err := request.Cookie(LoginCookieName)
+			var userUUID string
+			if err != nil {
+				userUUID = "undefined"
+			} else {
+				userUUID = userUUIDCookie.Value
+			}
+
+			logger.Info(fmt.Sprintf("[%s] Request info: URI = '%s'\tMethod = %s\tDuration = %d\tUser UUID = %s", prefix, request.RequestURI, request.Method, duration, userUUID))
 			logger.Info(fmt.Sprintf("[%s] Response info: URI = '%s'\tStatus = %d\tContent-Length = %d", prefix, request.RequestURI, lrw.statusCode, lrw.length))
 		})
 	}

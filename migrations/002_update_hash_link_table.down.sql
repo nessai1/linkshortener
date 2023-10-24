@@ -1,0 +1,2 @@
+DROP INDEX IF EXISTS hash_link_owner_uuid;
+ALTER TABLE hash_link DROP COLUMN OWNER_UUID;
