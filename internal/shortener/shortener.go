@@ -1,25 +1,33 @@
 package shortener
 
 import (
+	"errors"
+	"fmt"
+	"github.com/nessai1/linkshortener/internal/app"
+	"github.com/nessai1/linkshortener/internal/shortener/encoder"
+	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
 	"net/http"
 	"regexp"
 
-	"github.com/nessai1/linkshortener/internal/app"
-	encoder "github.com/nessai1/linkshortener/internal/shortener/encoder"
-	"github.com/nessai1/linkshortener/internal/storage"
 	"go.uber.org/zap"
 )
 
 type Config struct {
-	ServerAddr  string
-	TokenTail   string
-	StoragePath string
+	ServerAddr    string
+	TokenTail     string
+	StorageDriver linkstorage.StorageDriver
 }
 
-func GetApplication(config *Config, innerStorage *storage.KeyValueStorage) *Application {
+func GetApplication(config *Config) *Application {
+
+	lstorage, err := linkstorage.CreateStorage(config.StorageDriver)
+	if err != nil {
+		panic(fmt.Sprintf("cannot create storage with driver: %s", err.Error()))
+	}
+
 	application := Application{
 		config:  config,
-		storage: innerStorage,
+		storage: lstorage,
 	}
 
 	return &application
@@ -28,12 +36,12 @@ func GetApplication(config *Config, innerStorage *storage.KeyValueStorage) *Appl
 type Application struct {
 	config  *Config
 	logger  *zap.Logger
-	storage *storage.KeyValueStorage
+	storage *linkstorage.Storage
 }
 
 func (application *Application) OnBeforeClose() {
 	application.logger.Info("Closing shorter application...")
-	err := application.storage.Close()
+	err := application.storage.Save()
 	if err != nil {
 		application.logger.Error("Error while closing application storage")
 	} else {
@@ -61,17 +69,9 @@ func (application *Application) GetControllers() []app.Controller {
 		},
 		{
 			Mux:  application.getAPIRouter(),
-			Path: "/api",
+			Path: "/api/shorten",
 		},
 	}
-}
-
-func validateURL(url []byte) bool {
-	res, err := regexp.Match(`^https?://[^\s]+$`, url)
-	if err != nil {
-		return false
-	}
-	return res
 }
 
 func (application *Application) buildTokenTail(request *http.Request) string {
@@ -92,7 +92,18 @@ func (application *Application) createResource(url string) (string, error) {
 		return "", err
 	}
 
-	application.storage.Set(hash, url)
+	err = application.storage.Set(hash, url)
+	if err != nil && !errors.Is(err, linkstorage.ErrURLIntersection) {
+		return "", err
+	}
 
-	return hash, nil
+	return hash, err
+}
+
+func validateURL(url []byte) bool {
+	res, err := regexp.Match(`^https?://[^\s]+$`, url)
+	if err != nil {
+		return false
+	}
+	return res
 }

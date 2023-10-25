@@ -12,13 +12,18 @@ import (
 
 type loggingResponseWriter struct {
 	http.ResponseWriter
-	statusCode int
-	length     int
+	statusCode    int
+	length        int
+	headerIsWrite bool
 }
 
 func (lrw *loggingResponseWriter) WriteHeader(code int) {
+	if lrw.headerIsWrite {
+		return
+	}
 	lrw.statusCode = code
 	lrw.ResponseWriter.WriteHeader(code)
+	lrw.headerIsWrite = true
 }
 
 func (lrw *loggingResponseWriter) Write(b []byte) (n int, err error) {
@@ -30,7 +35,7 @@ func (lrw *loggingResponseWriter) Write(b []byte) (n int, err error) {
 }
 
 func NewLoggingResponseWriter(w http.ResponseWriter) *loggingResponseWriter {
-	return &loggingResponseWriter{w, http.StatusOK, 0}
+	return &loggingResponseWriter{w, http.StatusOK, 0, false}
 }
 
 func CreateAppLogger(envType EnvType) (*zap.Logger, error) {
