@@ -12,6 +12,14 @@ import (
 )
 
 func (application *Application) handleAddURL(writer http.ResponseWriter, request *http.Request) {
+	UserUUID, err := app.Authorize(writer, request)
+	if err != nil {
+		writer.WriteHeader(403)
+		application.logger.Error(fmt.Sprintf("Cannot authorize user: %s", err.Error()))
+		return
+	}
+	application.logger.Info(fmt.Sprintf("User auth: %s", UserUUID))
+
 	body, err := io.ReadAll(request.Body)
 	if err != nil {
 		application.logger.Debug(fmt.Sprintf("Client sends invalid request. (%s)", err.Error()))
@@ -27,7 +35,11 @@ func (application *Application) handleAddURL(writer http.ResponseWriter, request
 		return
 	}
 
-	hash, err := application.createResource(string(body))
+	hash, err := application.createResource(linkstorage.Link{
+		Value:     string(body),
+		OwnerUUID: UserUUID,
+	})
+
 	if err != nil {
 		if errors.Is(err, linkstorage.ErrURLIntersection) {
 			writer.WriteHeader(http.StatusConflict)
@@ -56,15 +68,15 @@ func (application *Application) handleGetURL(writer http.ResponseWriter, request
 		return
 	}
 
-	uri, ok := application.storage.Get(token)
+	link, ok := application.storage.Get(token)
 	if !ok {
-		application.logger.Debug(fmt.Sprintf("Link storage doesn't contain link \"%s\"", uri))
+		application.logger.Debug(fmt.Sprintf("Link storage doesn't contain link \"%s\"", link.Value))
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	application.logger.Info(fmt.Sprintf("Client success redirected from \"%s\" to \"%s\"", application.GetAddr()+"/"+token, uri))
-	writer.Header().Set("Location", uri)
+	application.logger.Info(fmt.Sprintf("Client success redirected from \"%s\" to \"%s\"", application.GetAddr()+"/"+token, link.Value))
+	writer.Header().Set("Location", link.Value)
 	writer.WriteHeader(http.StatusTemporaryRedirect)
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/nessai1/linkshortener/internal/app"
 	"github.com/nessai1/linkshortener/internal/shortener/encoder"
+	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -97,7 +98,10 @@ func TestApplication_handleGetURL(t *testing.T) {
 	testingApp.logger, _ = app.CreateAppLogger(app.Development)
 	serviceURL := "http://" + testingApp.GetAddr() + "/"
 	testURL := "https://ya.ru"
-	testHash, err := testingApp.createResource(testURL)
+	testHash, err := testingApp.createResource(linkstorage.Link{
+		Value:     testURL,
+		OwnerUUID: "",
+	})
 	require.NoError(t, err, "Error while create test url")
 
 	tests := []struct {

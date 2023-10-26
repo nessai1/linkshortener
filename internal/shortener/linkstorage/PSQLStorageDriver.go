@@ -9,7 +9,7 @@ type PSQLStorageDriver struct {
 }
 
 func (driver *PSQLStorageDriver) Save(hl HashToLink) error {
-	preparedInsert, prepareErr := driver.SQLDriver.Prepare("INSERT INTO hash_link (HASH, LINK) VALUES ($1, $2) ON CONFLICT DO NOTHING")
+	preparedInsert, prepareErr := driver.SQLDriver.Prepare("INSERT INTO hash_link (HASH, LINK, OWNER_UUID) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING")
 	if prepareErr != nil {
 		return prepareErr
 	}
@@ -20,7 +20,7 @@ func (driver *PSQLStorageDriver) Save(hl HashToLink) error {
 	}
 
 	for key, val := range hl {
-		_, err = preparedInsert.Exec(key, val)
+		_, err = preparedInsert.Exec(key, val.Value, val.OwnerUUID)
 		if err != nil {
 			return tx.Rollback()
 		}
@@ -37,7 +37,7 @@ func (driver *PSQLStorageDriver) Save(hl HashToLink) error {
 func (driver *PSQLStorageDriver) Load() (HashToLink, error) {
 	hl := make(HashToLink, 0)
 
-	rows, err := driver.SQLDriver.Query("SELECT hash, link FROM hash_link")
+	rows, err := driver.SQLDriver.Query("SELECT HASH, LINK, OWNER_UUID FROM hash_link")
 	if err != nil {
 		return nil, err
 	}
@@ -49,12 +49,15 @@ func (driver *PSQLStorageDriver) Load() (HashToLink, error) {
 		if err = rows.Err(); err != nil {
 			return nil, err
 		}
-		err = rows.Scan(&kvrow.Key, &kvrow.Value)
+		err = rows.Scan(&kvrow.Key, &kvrow.Value, &kvrow.OwnerUUID)
 		if err != nil {
 			return nil, err
 		}
 
-		hl[kvrow.Key] = kvrow.Value
+		hl[kvrow.Key] = Link{
+			Value:     kvrow.Value,
+			OwnerUUID: kvrow.OwnerUUID,
+		}
 	}
 
 	return hl, nil

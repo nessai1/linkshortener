@@ -40,8 +40,16 @@ type BatchItemResponse struct {
 type BatchResponse []BatchItemResponse
 
 func (application *Application) apiHandleAddURL(writer http.ResponseWriter, request *http.Request) {
+	UserUUID, err := app.Authorize(writer, request)
+	if err != nil {
+		writer.WriteHeader(403)
+		application.logger.Error(fmt.Sprintf("Cannot authorize user: %s", err.Error()))
+		return
+	}
+	application.logger.Info(fmt.Sprintf("User auth: %s", UserUUID))
+
 	var buffer bytes.Buffer
-	_, err := buffer.ReadFrom(request.Body)
+	_, err = buffer.ReadFrom(request.Body)
 	if err != nil {
 		application.logger.Debug(fmt.Sprintf("Client sends invalid request. (%s)", err.Error()))
 		writer.WriteHeader(http.StatusRequestEntityTooLarge)
@@ -66,7 +74,10 @@ func (application *Application) apiHandleAddURL(writer http.ResponseWriter, requ
 		writer.WriteHeader(http.StatusBadRequest)
 	}
 
-	hash, err := application.createResource(requestBody.URL)
+	hash, err := application.createResource(linkstorage.Link{
+		Value:     requestBody.URL,
+		OwnerUUID: UserUUID,
+	})
 	if err != nil {
 
 		if errors.Is(err, linkstorage.ErrURLIntersection) {
@@ -90,8 +101,16 @@ func (application *Application) apiHandleAddURL(writer http.ResponseWriter, requ
 }
 
 func (application *Application) apiHandleAddBatchURL(writer http.ResponseWriter, request *http.Request) {
+	UserUUID, err := app.Authorize(writer, request)
+	if err != nil {
+		writer.WriteHeader(403)
+		application.logger.Error(fmt.Sprintf("Cannot authorize user: %s", err.Error()))
+		return
+	}
+	application.logger.Info(fmt.Sprintf("User auth: %s", UserUUID))
+
 	var buffer bytes.Buffer
-	_, err := buffer.ReadFrom(request.Body)
+	_, err = buffer.ReadFrom(request.Body)
 	if err != nil {
 		application.logger.Debug(fmt.Sprintf("Client sends invalid request. (%s)", err.Error()))
 		writer.WriteHeader(http.StatusRequestEntityTooLarge)
@@ -128,8 +147,9 @@ func (application *Application) apiHandleAddBatchURL(writer http.ResponseWriter,
 		}
 
 		innerKWRows[i] = linkstorage.KeyValueRow{
-			Key:   hash,
-			Value: item.OriginalURL,
+			Key:       hash,
+			Value:     item.OriginalURL,
+			OwnerUUID: UserUUID,
 		}
 		expectedResult[i] = BatchItemResponse{
 			CorrelationID: item.CorrelationID,

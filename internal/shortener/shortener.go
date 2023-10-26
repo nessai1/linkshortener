@@ -86,13 +86,13 @@ func (application *Application) buildTokenTail(request *http.Request) string {
 	return scheme + application.GetAddr() + "/"
 }
 
-func (application *Application) createResource(url string) (string, error) {
-	hash, err := encoder.EncodeURL(url)
+func (application *Application) createResource(link linkstorage.Link) (string, error) {
+	hash, err := encoder.EncodeURL(link.Value)
 	if err != nil {
 		return "", err
 	}
 
-	err = application.storage.Set(hash, url)
+	err = application.storage.Set(hash, link)
 	if err != nil && !errors.Is(err, linkstorage.ErrURLIntersection) {
 		return "", err
 	}
