@@ -21,6 +21,11 @@ type AddURLRequestResult struct {
 	Result string `json:"result"`
 }
 
+type GetUserURLsResult struct {
+	OriginalURL string `json:"original_url"`
+	ShortURL    string `json:"short_url"`
+}
+
 type BatchItemRequest struct {
 	CorrelationID string `json:"correlation_id"`
 	OriginalURL   string `json:"original_url"`
@@ -175,13 +180,58 @@ func (application *Application) apiHandleAddBatchURL(writer http.ResponseWriter,
 	writer.Write(requestResult)
 }
 
+func (application *Application) apiHandleGetUserURLs(writer http.ResponseWriter, request *http.Request) {
+	cookie, err := request.Cookie(app.LoginCookieName)
+	if err != nil {
+		if errors.Is(err, http.ErrNoCookie) {
+			writer.WriteHeader(401)
+		} else {
+			application.logger.Error(fmt.Sprintf("error while get user login cookie: %s", err.Error()))
+			writer.WriteHeader(500)
+		}
+
+		return
+	}
+
+	UserUUID, err := app.FetchUUID(cookie.Value)
+	if err != nil {
+		application.logger.Error(fmt.Sprintf("User sends invalid cookie: %s", err.Error()))
+		c := &http.Cookie{
+			Name:   app.LoginCookieName,
+			Value:  "",
+			MaxAge: -1,
+		}
+		http.SetCookie(writer, c)
+		writer.WriteHeader(401)
+		return
+	}
+
+	result := make([]GetUserURLsResult, 0)
+	rows := application.storage.FindByUserUUID(UserUUID)
+	if len(rows) == 0 {
+		writer.WriteHeader(204)
+		return
+	}
+
+	for _, row := range rows {
+		result = append(result, GetUserURLsResult{
+			OriginalURL: row.Value,
+			ShortURL:    application.buildTokenTail(request) + row.Key,
+		})
+	}
+
+	rs, _ := json.Marshal(result)
+	writer.Write(rs)
+}
+
 func (application *Application) getAPIRouter() *chi.Mux {
 	router := chi.NewRouter()
 
 	router.Use(app.GetRequestLogMiddleware(application.logger, "API"))
 
-	router.Post("/", application.apiHandleAddURL)
-	router.Post("/batch", application.apiHandleAddBatchURL)
+	router.Post("/shorten", application.apiHandleAddURL)
+	router.Post("/shorten/batch", application.apiHandleAddBatchURL)
+	router.Get("/user/urls", application.apiHandleGetUserURLs)
 
 	return router
 }
