@@ -9,13 +9,13 @@ type HashToLink map[string]Link
 
 type Link struct {
 	Value     string
-	OwnerUUID string
+	OwnerUUID *string
 }
 
 type KeyValueRow struct {
-	Key       string `json:"key"`
-	Value     string `json:"value"`
-	OwnerUUID string `json:"owner_uuid"`
+	Key       string  `json:"key"`
+	Value     string  `json:"value"`
+	OwnerUUID *string `json:"owner_uuid"`
 }
 
 var ErrURLIntersection = errors.New("inserting URL not unique")
@@ -55,7 +55,8 @@ func (storage *Storage) Get(hash string) (Link, bool) {
 func (storage *Storage) FindByUserUUID(userUUID string) []KeyValueRow {
 	links := make([]KeyValueRow, 0)
 	for hash, link := range storage.hl {
-		if link.OwnerUUID == userUUID {
+
+		if link.OwnerUUID != nil && *link.OwnerUUID == userUUID {
 			links = append(links, KeyValueRow{
 				Key:       hash,
 				Value:     link.Value,

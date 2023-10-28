@@ -37,7 +37,7 @@ func (application *Application) handleAddURL(writer http.ResponseWriter, request
 
 	hash, err := application.createResource(linkstorage.Link{
 		Value:     string(body),
-		OwnerUUID: UserUUID,
+		OwnerUUID: &UserUUID,
 	})
 
 	if err != nil {
