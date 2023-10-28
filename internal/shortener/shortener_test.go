@@ -100,7 +100,7 @@ func TestApplication_handleGetURL(t *testing.T) {
 	testURL := "https://ya.ru"
 	testHash, err := testingApp.createResource(linkstorage.Link{
 		Value:     testURL,
-		OwnerUUID: "",
+		OwnerUUID: nil,
 	})
 	require.NoError(t, err, "Error while create test url")
 
