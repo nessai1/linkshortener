@@ -213,6 +213,7 @@ func (application *Application) apiHandleGetUserURLs(writer http.ResponseWriter,
 		return
 	}
 
+	writer.Header().Set("Content-Type", "application/json")
 	for _, row := range rows {
 		result = append(result, GetUserURLsResult{
 			OriginalURL: row.Value,
