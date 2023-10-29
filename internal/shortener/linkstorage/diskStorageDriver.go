@@ -22,6 +22,7 @@ func (driver *DiskStorageDriver) Save(hl HashToLink) error {
 			Key:       key,
 			Value:     val.Value,
 			OwnerUUID: val.OwnerUUID,
+			IsDeleted: val.IsDeleted,
 		})
 	}
 

@@ -31,6 +31,8 @@ type BatchItemRequest struct {
 	OriginalURL   string `json:"original_url"`
 }
 
+type DeleteUserURLsRequest []string
+
 type BathRequest []BatchItemRequest
 
 type BadRequest struct {
@@ -225,6 +227,65 @@ func (application *Application) apiHandleGetUserURLs(writer http.ResponseWriter,
 	writer.Write(rs)
 }
 
+func (application *Application) apiHandleDeleteURLs(writer http.ResponseWriter, request *http.Request) {
+	cookie, err := request.Cookie(app.LoginCookieName)
+	if err != nil {
+		if errors.Is(err, http.ErrNoCookie) {
+			writer.WriteHeader(401)
+		} else {
+			application.logger.Error(fmt.Sprintf("error while get user login cookie: %s", err.Error()))
+			writer.WriteHeader(500)
+		}
+
+		return
+	}
+
+	UserUUID, err := app.FetchUUID(cookie.Value)
+	if err != nil {
+		application.logger.Error(fmt.Sprintf("User sends invalid cookie: %s", err.Error()))
+		c := &http.Cookie{
+			Name:   app.LoginCookieName,
+			Value:  "",
+			MaxAge: -1,
+		}
+		http.SetCookie(writer, c)
+		writer.WriteHeader(401)
+		return
+	}
+
+	var buffer bytes.Buffer
+	_, err = buffer.ReadFrom(request.Body)
+	if err != nil {
+		application.logger.Debug(fmt.Sprintf("Client sends invalid request. (%s)", err.Error()))
+		writer.WriteHeader(http.StatusRequestEntityTooLarge)
+		return
+	}
+
+	var requestBody DeleteUserURLsRequest
+	err = json.Unmarshal(buffer.Bytes(), &requestBody)
+	if err != nil {
+		application.logger.Debug(fmt.Sprintf("Cannot unmarshal client request. (%s)", err.Error()))
+		writer.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	go func() {
+		deleteBatch := make([]linkstorage.Hash, 0)
+		for _, val := range requestBody {
+			deleteBatch = append(deleteBatch, linkstorage.Hash{
+				Value:     val,
+				OwnerUUID: &UserUUID,
+			})
+		}
+
+		err := application.storage.DeleteBatch(deleteBatch)
+		if err != nil {
+			application.logger.Error(fmt.Sprintf("Error while delete links for User %s: %s", UserUUID, err.Error()))
+		}
+	}()
+	writer.WriteHeader(202)
+}
+
 func (application *Application) getAPIRouter() *chi.Mux {
 	router := chi.NewRouter()
 
@@ -233,6 +294,7 @@ func (application *Application) getAPIRouter() *chi.Mux {
 	router.Post("/shorten", application.apiHandleAddURL)
 	router.Post("/shorten/batch", application.apiHandleAddBatchURL)
 	router.Get("/user/urls", application.apiHandleGetUserURLs)
+	router.Delete("/user/urls", application.apiHandleDeleteURLs)
 
 	return router
 }

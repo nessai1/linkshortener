@@ -3,11 +3,19 @@ package linkstorage
 import (
 	"errors"
 	"fmt"
+	"runtime"
+	"sync"
 )
 
 type HashToLink map[string]Link
 
 type Link struct {
+	Value     string
+	OwnerUUID *string
+	IsDeleted bool
+}
+
+type Hash struct {
 	Value     string
 	OwnerUUID *string
 }
@@ -16,6 +24,7 @@ type KeyValueRow struct {
 	Key       string  `json:"key"`
 	Value     string  `json:"value"`
 	OwnerUUID *string `json:"owner_uuid"`
+	IsDeleted bool    `json:"is_deleted"`
 }
 
 var ErrURLIntersection = errors.New("inserting URL not unique")
@@ -93,6 +102,51 @@ func (storage *Storage) LoadBatch(items []KeyValueRow) error {
 	}
 
 	return nil
+}
+
+func (storage *Storage) DeleteBatch(items []Hash) error {
+	var wg sync.WaitGroup
+
+	CPUs := runtime.NumCPU()
+	wg.Add(CPUs)
+	generator := newGenerator[Hash](items...)
+
+	for i := 0; i < CPUs; i++ {
+		go func() {
+			deleteWorker(generator, storage)
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+	return storage.Save()
+}
+
+func deleteWorker(hashItemsChannel <-chan Hash, storage *Storage) {
+	for hashItem := range hashItemsChannel {
+		rs, ok := storage.Get(hashItem.Value)
+		if !ok {
+			continue
+		}
+
+		if !rs.IsDeleted && (*rs.OwnerUUID == *hashItem.OwnerUUID) {
+			val, _ := storage.hl[hashItem.Value] // by get method we already know that row exists
+			val.IsDeleted = true
+			storage.hl[hashItem.Value] = val
+		}
+	}
+}
+
+func newGenerator[T interface{}](items ...T) <-chan T {
+	ch := make(chan T)
+	go func() {
+		defer close(ch)
+		for _, val := range items {
+			ch <- val
+		}
+	}()
+
+	return ch
 }
 
 func CreateStorage(driver StorageDriver) (*Storage, error) {

@@ -9,7 +9,7 @@ type PSQLStorageDriver struct {
 }
 
 func (driver *PSQLStorageDriver) Save(hl HashToLink) error {
-	preparedInsert, prepareErr := driver.SQLDriver.Prepare("INSERT INTO hash_link (HASH, LINK, OWNER_UUID) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING")
+	preparedInsert, prepareErr := driver.SQLDriver.Prepare("INSERT INTO hash_link (HASH, LINK, OWNER_UUID, IS_DELETED) VALUES ($1, $2, $3, $4) ON CONFLICT (HASH) DO UPDATE SET IS_DELETED = $4")
 	if prepareErr != nil {
 		return prepareErr
 	}
@@ -20,7 +20,7 @@ func (driver *PSQLStorageDriver) Save(hl HashToLink) error {
 	}
 
 	for key, val := range hl {
-		_, err = preparedInsert.Exec(key, val.Value, val.OwnerUUID)
+		_, err = preparedInsert.Exec(key, val.Value, val.OwnerUUID, val.IsDeleted)
 		if err != nil {
 			return tx.Rollback()
 		}
