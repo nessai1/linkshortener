@@ -130,7 +130,7 @@ func deleteWorker(hashItemsChannel <-chan Hash, storage *Storage) {
 		}
 
 		if !rs.IsDeleted && (*rs.OwnerUUID == *hashItem.OwnerUUID) {
-			val, _ := storage.hl[hashItem.Value] // by get method we already know that row exists
+			val := storage.hl[hashItem.Value] // by get method we already know that row exists
 			val.IsDeleted = true
 			storage.hl[hashItem.Value] = val
 		}
