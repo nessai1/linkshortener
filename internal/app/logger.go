@@ -10,14 +10,14 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-type loggingResponseWriter struct {
+type LoggingResponseWriter struct {
 	http.ResponseWriter
 	statusCode    int
 	length        int
 	headerIsWrite bool
 }
 
-func (lrw *loggingResponseWriter) WriteHeader(code int) {
+func (lrw *LoggingResponseWriter) WriteHeader(code int) {
 	if lrw.headerIsWrite {
 		return
 	}
@@ -26,7 +26,7 @@ func (lrw *loggingResponseWriter) WriteHeader(code int) {
 	lrw.headerIsWrite = true
 }
 
-func (lrw *loggingResponseWriter) Write(b []byte) (n int, err error) {
+func (lrw *LoggingResponseWriter) Write(b []byte) (n int, err error) {
 	n, err = lrw.ResponseWriter.Write(b)
 
 	lrw.length += n
@@ -34,8 +34,8 @@ func (lrw *loggingResponseWriter) Write(b []byte) (n int, err error) {
 	return
 }
 
-func NewLoggingResponseWriter(w http.ResponseWriter) *loggingResponseWriter {
-	return &loggingResponseWriter{w, http.StatusOK, 0, false}
+func NewLoggingResponseWriter(w http.ResponseWriter) *LoggingResponseWriter {
+	return &LoggingResponseWriter{w, http.StatusOK, 0, false}
 }
 
 func CreateAppLogger(envType EnvType) (*zap.Logger, error) {
@@ -81,12 +81,15 @@ func GetRequestLogMiddleware(logger *zap.Logger, prefix string) func(handler htt
 
 			duration := time.Since(startTime)
 
-			userUUIDCookie, err := request.Cookie(LoginCookieName)
+			signCookie, err := request.Cookie(LoginCookieName)
 			var userUUID string
 			if err != nil {
 				userUUID = "undefined"
 			} else {
-				userUUID = userUUIDCookie.Value
+				userUUID, err = FetchUUID(signCookie.Value)
+				if err != nil {
+					userUUID = "undefined"
+				}
 			}
 
 			logger.Info(fmt.Sprintf("[%s] Request info: URI = '%s'\tMethod = %s\tDuration = %d\tUser UUID = %s", prefix, request.RequestURI, request.Method, duration, userUUID))
