@@ -46,6 +46,7 @@ type BatchItemResponse struct {
 
 type BatchResponse []BatchItemResponse
 
+// test comment
 func (application *Application) apiHandleAddURL(writer http.ResponseWriter, request *http.Request) {
 	UserUUID, err := app.Authorize(writer, request)
 	if err != nil {
