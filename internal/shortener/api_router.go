@@ -50,7 +50,7 @@ type BatchResponse []BatchItemResponse
 func (application *Application) apiHandleAddURL(writer http.ResponseWriter, request *http.Request) {
 	UserUUID, err := app.Authorize(writer, request)
 	if err != nil {
-		writer.WriteHeader(403)
+		writer.WriteHeader(http.StatusForbidden)
 		application.logger.Error(fmt.Sprintf("Cannot authorize user: %s", err.Error()))
 		return
 	}
@@ -111,7 +111,7 @@ func (application *Application) apiHandleAddURL(writer http.ResponseWriter, requ
 func (application *Application) apiHandleAddBatchURL(writer http.ResponseWriter, request *http.Request) {
 	UserUUID, err := app.Authorize(writer, request)
 	if err != nil {
-		writer.WriteHeader(403)
+		writer.WriteHeader(http.StatusForbidden)
 		application.logger.Error(fmt.Sprintf("Cannot authorize user: %s", err.Error()))
 		return
 	}
@@ -187,10 +187,10 @@ func (application *Application) apiHandleGetUserURLs(writer http.ResponseWriter,
 	cookie, err := request.Cookie(app.LoginCookieName)
 	if err != nil {
 		if errors.Is(err, http.ErrNoCookie) {
-			writer.WriteHeader(401)
+			writer.WriteHeader(http.StatusUnauthorized)
 		} else {
 			application.logger.Error(fmt.Sprintf("error while get user login cookie: %s", err.Error()))
-			writer.WriteHeader(500)
+			writer.WriteHeader(http.StatusInternalServerError)
 		}
 
 		return
@@ -205,14 +205,14 @@ func (application *Application) apiHandleGetUserURLs(writer http.ResponseWriter,
 			MaxAge: -1,
 		}
 		http.SetCookie(writer, c)
-		writer.WriteHeader(401)
+		writer.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
 	result := make([]GetUserURLsResult, 0)
 	rows := application.storage.FindByUserUUID(UserUUID)
 	if len(rows) == 0 {
-		writer.WriteHeader(204)
+		writer.WriteHeader(http.StatusNoContent)
 		return
 	}
 
@@ -232,10 +232,10 @@ func (application *Application) apiHandleDeleteURLs(writer http.ResponseWriter, 
 	cookie, err := request.Cookie(app.LoginCookieName)
 	if err != nil {
 		if errors.Is(err, http.ErrNoCookie) {
-			writer.WriteHeader(401)
+			writer.WriteHeader(http.StatusUnauthorized)
 		} else {
 			application.logger.Error(fmt.Sprintf("error while get user login cookie: %s", err.Error()))
-			writer.WriteHeader(500)
+			writer.WriteHeader(http.StatusInternalServerError)
 		}
 
 		return
@@ -250,7 +250,7 @@ func (application *Application) apiHandleDeleteURLs(writer http.ResponseWriter, 
 			MaxAge: -1,
 		}
 		http.SetCookie(writer, c)
-		writer.WriteHeader(401)
+		writer.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
@@ -284,7 +284,7 @@ func (application *Application) apiHandleDeleteURLs(writer http.ResponseWriter, 
 			application.logger.Error(fmt.Sprintf("Error while delete links for User %s: %s", UserUUID, err.Error()))
 		}
 	}()
-	writer.WriteHeader(202)
+	writer.WriteHeader(http.StatusAccepted)
 }
 
 func (application *Application) getAPIRouter() *chi.Mux {

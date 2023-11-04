@@ -14,7 +14,7 @@ import (
 func (application *Application) handleAddURL(writer http.ResponseWriter, request *http.Request) {
 	UserUUID, err := app.Authorize(writer, request)
 	if err != nil {
-		writer.WriteHeader(403)
+		writer.WriteHeader(http.StatusForbidden)
 		application.logger.Error(fmt.Sprintf("Cannot authorize user: %s", err.Error()))
 		return
 	}
