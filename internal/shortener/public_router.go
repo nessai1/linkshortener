@@ -78,6 +78,7 @@ func (application *Application) handleGetURL(writer http.ResponseWriter, request
 	if link.IsDeleted {
 		application.logger.Info(fmt.Sprintf("Client success get resource \"%s\", but it's was deleted", link.Value))
 		writer.WriteHeader(http.StatusGone)
+		return
 	}
 
 	application.logger.Info(fmt.Sprintf("Client success redirected from \"%s\" to \"%s\"", application.GetAddr()+"/"+token, link.Value))
