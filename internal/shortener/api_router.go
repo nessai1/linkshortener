@@ -58,7 +58,7 @@ func (application *Application) apiHandleAddURL(writer http.ResponseWriter, requ
 	var buffer bytes.Buffer
 	_, err = buffer.ReadFrom(request.Body)
 	if err != nil {
-		application.logger.Debug(fmt.Sprintf("Client sends invalid request. (%s)", err.Error()))
+		application.logger.Debug("Client sends invalid request", zap.Error(err))
 		writer.WriteHeader(http.StatusRequestEntityTooLarge)
 		return
 	}
@@ -66,7 +66,7 @@ func (application *Application) apiHandleAddURL(writer http.ResponseWriter, requ
 	var requestBody AddURLRequestBody
 	err = json.Unmarshal(buffer.Bytes(), &requestBody)
 	if err != nil {
-		application.logger.Debug(fmt.Sprintf("Cannot unmarshal client request. (%s)", err.Error()))
+		application.logger.Debug("Cannot unmarshal client request", zap.Error(err))
 		writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -74,7 +74,7 @@ func (application *Application) apiHandleAddURL(writer http.ResponseWriter, requ
 	writer.Header().Set("Content-Type", "application/json")
 
 	if !validateURL([]byte(requestBody.URL)) {
-		application.logger.Debug(fmt.Sprintf("Client sends invalid URL \"%s\".", requestBody.URL))
+		application.logger.Debug("Client sends invalid URL", zap.String("URL", requestBody.URL))
 		errorAnswer := BadRequest{ErrorMsg: "Invalid pattern of URL"}
 		rs, _ := json.Marshal(errorAnswer)
 		writer.Write(rs)
@@ -89,11 +89,10 @@ func (application *Application) apiHandleAddURL(writer http.ResponseWriter, requ
 
 		if errors.Is(err, linkstorage.ErrURLIntersection) {
 			writer.WriteHeader(http.StatusConflict)
-			application.logger.Debug(fmt.Sprintf("User insert dublicate url: %s", requestBody.URL))
+			application.logger.Debug("User insert duplicate URL", zap.String("URL", requestBody.URL))
 		} else {
 			writer.WriteHeader(http.StatusInternalServerError)
-			application.logger.Debug(fmt.Sprintf("Cannot create resource for \"%s\". (%s)", requestBody.URL, err.Error()))
-			application.logger.Error(fmt.Sprintf("Error while creating resource '%s'\n", requestBody.URL))
+			application.logger.Error(fmt.Sprintf("Cannot create resource for \"%s\"", requestBody.URL), zap.Error(err))
 			return
 		}
 	}
@@ -102,7 +101,7 @@ func (application *Application) apiHandleAddURL(writer http.ResponseWriter, requ
 
 	requestResult, _ := json.Marshal(AddURLRequestResult{Result: link})
 
-	application.logger.Info(fmt.Sprintf("Client success add URL \"%s\" by API", requestBody.URL))
+	application.logger.Debug("Client success add URL by API", zap.String("URL", requestBody.URL))
 	writer.WriteHeader(http.StatusCreated)
 	writer.Write(requestResult)
 }
@@ -118,7 +117,7 @@ func (application *Application) apiHandleAddBatchURL(writer http.ResponseWriter,
 	var buffer bytes.Buffer
 	_, err = buffer.ReadFrom(request.Body)
 	if err != nil {
-		application.logger.Debug(fmt.Sprintf("Client sends invalid request. (%s)", err.Error()))
+		application.logger.Debug("Client sends invalid request", zap.Error(err))
 		writer.WriteHeader(http.StatusRequestEntityTooLarge)
 		return
 	}
@@ -126,7 +125,7 @@ func (application *Application) apiHandleAddBatchURL(writer http.ResponseWriter,
 	var requestBody BathRequest
 	err = json.Unmarshal(buffer.Bytes(), &requestBody)
 	if err != nil {
-		application.logger.Debug(fmt.Sprintf("Cannot unmarshal client request. (%s)", err.Error()))
+		application.logger.Debug("Cannot unmarshal client request", zap.Error(err))
 		writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -176,7 +175,7 @@ func (application *Application) apiHandleAddBatchURL(writer http.ResponseWriter,
 
 	requestResult, _ := json.Marshal(expectedResult)
 
-	application.logger.Info(fmt.Sprintf("Client success add batch with %d URLs  by API", len(requestBody)))
+	application.logger.Debug(fmt.Sprintf("Client success add batch with %d URLs  by API", len(requestBody)))
 	writer.WriteHeader(http.StatusCreated)
 	writer.Write(requestResult)
 }
@@ -187,7 +186,7 @@ func (application *Application) apiHandleGetUserURLs(writer http.ResponseWriter,
 		if errors.Is(err, http.ErrNoCookie) {
 			writer.WriteHeader(http.StatusUnauthorized)
 		} else {
-			application.logger.Error(fmt.Sprintf("error while get user login cookie: %s", err.Error()))
+			application.logger.Error("Error while get user login cookie: %s", zap.Error(err))
 			writer.WriteHeader(http.StatusInternalServerError)
 		}
 
@@ -196,7 +195,7 @@ func (application *Application) apiHandleGetUserURLs(writer http.ResponseWriter,
 
 	UserUUID, err := app.FetchUUID(cookie.Value)
 	if err != nil {
-		application.logger.Error(fmt.Sprintf("User sends invalid cookie: %s", err.Error()))
+		application.logger.Error("User sends invalid cookie", zap.Error(err))
 		c := &http.Cookie{
 			Name:   app.LoginCookieName,
 			Value:  "",
@@ -232,7 +231,7 @@ func (application *Application) apiHandleDeleteURLs(writer http.ResponseWriter, 
 		if errors.Is(err, http.ErrNoCookie) {
 			writer.WriteHeader(http.StatusUnauthorized)
 		} else {
-			application.logger.Error(fmt.Sprintf("error while get user login cookie: %s", err.Error()))
+			application.logger.Error("Error while get user login cookie", zap.Error(err))
 			writer.WriteHeader(http.StatusInternalServerError)
 		}
 
@@ -241,7 +240,7 @@ func (application *Application) apiHandleDeleteURLs(writer http.ResponseWriter, 
 
 	UserUUID, err := app.FetchUUID(cookie.Value)
 	if err != nil {
-		application.logger.Error(fmt.Sprintf("User sends invalid cookie: %s", err.Error()))
+		application.logger.Error("User sends invalid cookie", zap.Error(err))
 		c := &http.Cookie{
 			Name:   app.LoginCookieName,
 			Value:  "",
@@ -255,7 +254,7 @@ func (application *Application) apiHandleDeleteURLs(writer http.ResponseWriter, 
 	var buffer bytes.Buffer
 	_, err = buffer.ReadFrom(request.Body)
 	if err != nil {
-		application.logger.Debug(fmt.Sprintf("Client sends invalid request. (%s)", err.Error()))
+		application.logger.Debug("Client sends invalid request", zap.Error(err))
 		writer.WriteHeader(http.StatusRequestEntityTooLarge)
 		return
 	}
@@ -263,7 +262,7 @@ func (application *Application) apiHandleDeleteURLs(writer http.ResponseWriter, 
 	var requestBody DeleteUserURLsRequest
 	err = json.Unmarshal(buffer.Bytes(), &requestBody)
 	if err != nil {
-		application.logger.Debug(fmt.Sprintf("Cannot unmarshal client request. (%s)", err.Error()))
+		application.logger.Debug("Cannot unmarshal client request", zap.Error(err))
 		writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -279,7 +278,7 @@ func (application *Application) apiHandleDeleteURLs(writer http.ResponseWriter, 
 
 		err := application.storage.DeleteBatch(deleteBatch)
 		if err != nil {
-			application.logger.Error(fmt.Sprintf("Error while delete links for User %s: %s", UserUUID, err.Error()))
+			application.logger.Error("Error while delete user links", zap.String("User UUID", UserUUID))
 		}
 	}()
 	writer.WriteHeader(http.StatusAccepted)

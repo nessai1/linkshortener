@@ -28,7 +28,7 @@ func Run(application Application, envType EnvType) {
 		router.Mount(controller.Path, controller.Mux)
 	}
 
-	logger.Info(fmt.Sprintf("staring server on addr: %s", application.GetAddr()))
+	logger.Info("Starting server", zap.String("Server addr", application.GetAddr()))
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)

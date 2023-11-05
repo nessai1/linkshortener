@@ -92,8 +92,20 @@ func GetRequestLogMiddleware(logger *zap.Logger, prefix string) func(handler htt
 				}
 			}
 
-			logger.Info(fmt.Sprintf("[%s] Request info: URI = '%s'\tMethod = %s\tDuration = %d\tUser UUID = %s", prefix, request.RequestURI, request.Method, duration, userUUID))
-			logger.Info(fmt.Sprintf("[%s] Response info: URI = '%s'\tStatus = %d\tContent-Length = %d", prefix, request.RequestURI, lrw.statusCode, lrw.length))
+			logger.Info(
+				fmt.Sprintf("[%s] Request info", prefix),
+				zap.String("URI", request.RequestURI),
+				zap.String("Method", request.Method),
+				zap.Int64("Duration", int64(duration)),
+				zap.String("User UUID", userUUID),
+			)
+
+			logger.Info(
+				fmt.Sprintf("[%s] Request info", prefix),
+				zap.String("URI", request.RequestURI),
+				zap.Int("Status", lrw.statusCode),
+				zap.Int("Content-Length", lrw.length),
+			)
 		})
 	}
 }

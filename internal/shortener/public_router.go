@@ -22,14 +22,14 @@ func (application *Application) handleAddURL(writer http.ResponseWriter, request
 
 	body, err := io.ReadAll(request.Body)
 	if err != nil {
-		application.logger.Debug(fmt.Sprintf("Client sends invalid request. (%s)", err.Error()))
+		application.logger.Debug("Client sends invalid request", zap.Error(err))
 		writer.WriteHeader(http.StatusBadRequest)
 		writer.Write([]byte("Failed to read body."))
 		return
 	}
 
 	if !validateURL(body) {
-		application.logger.Debug(fmt.Sprintf("Client sends invalid url: %s", body))
+		application.logger.Debug("Client sends invalid url", zap.String("url", string(body)))
 		writer.WriteHeader(http.StatusBadRequest)
 		writer.Write([]byte("Invalid pattern of given URI"))
 		return
@@ -46,8 +46,7 @@ func (application *Application) handleAddURL(writer http.ResponseWriter, request
 			application.logger.Debug(fmt.Sprintf("User insert dublicate url: %s", string(body)))
 		} else {
 			writer.WriteHeader(http.StatusInternalServerError)
-			application.logger.Debug(fmt.Sprintf("Cannot create resource for \"%s\". (%s)", body, err.Error()))
-			application.logger.Error(fmt.Sprintf("Error while creating resource '%s'\n", body))
+			application.logger.Error(fmt.Sprintf("Cannot create resource for \"%s\"", body), zap.Error(err))
 			return
 		}
 	}
@@ -57,7 +56,7 @@ func (application *Application) handleAddURL(writer http.ResponseWriter, request
 	writer.Header().Set("Content-Type", "text/plain")
 	writer.WriteHeader(http.StatusCreated)
 	writer.Write([]byte(link))
-	application.logger.Info(fmt.Sprintf("Client success add URL \"%s\"", link))
+	application.logger.Debug("Client success add URL", zap.String("URL", link))
 }
 
 func (application *Application) handleGetURL(writer http.ResponseWriter, request *http.Request) {
@@ -76,12 +75,12 @@ func (application *Application) handleGetURL(writer http.ResponseWriter, request
 	}
 
 	if link.IsDeleted {
-		application.logger.Info(fmt.Sprintf("Client success get resource \"%s\", but it's was deleted", link.Value))
+		application.logger.Debug(fmt.Sprintf("Client success get resource \"%s\", but it's was deleted", link.Value))
 		writer.WriteHeader(http.StatusGone)
 		return
 	}
 
-	application.logger.Info(fmt.Sprintf("Client success redirected from \"%s\" to \"%s\"", application.GetAddr()+"/"+token, link.Value))
+	application.logger.Debug(fmt.Sprintf("Client success redirected from \"%s\" to \"%s\"", application.GetAddr()+"/"+token, link.Value))
 	writer.Header().Set("Location", link.Value)
 	writer.WriteHeader(http.StatusTemporaryRedirect)
 }
@@ -90,7 +89,7 @@ func (application *Application) handleCheckStorageStatus(writer http.ResponseWri
 	driverIsOk, err := application.storage.Ping()
 
 	if !driverIsOk {
-		application.logger.Info("Error while ping storage: " + err.Error())
+		application.logger.Error("Error while ping storage", zap.Error(err))
 		writer.WriteHeader(http.StatusInternalServerError)
 	} else {
 		writer.WriteHeader(http.StatusOK)

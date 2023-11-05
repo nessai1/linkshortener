@@ -2,7 +2,6 @@ package app
 
 import (
 	"compress/gzip"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -23,14 +22,14 @@ func getZipMiddleware(logger *zap.Logger) func(handler http.Handler) http.Handle
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 			if !strings.Contains(request.Header.Get("Accept-Encoding"), "gzip") {
-				logger.Info("Client doesn't accept gzip format.")
+				logger.Debug("Client doesn't accept gzip format.")
 				next.ServeHTTP(writer, request)
 				return
 			}
 
 			gz, err := gzip.NewWriterLevel(writer, gzip.BestSpeed)
 			if err != nil {
-				logger.Fatal(fmt.Sprintf("Gzip encoding level doesn't work! Error: %s", err.Error()))
+				logger.Fatal("Gzip encoding level doesn't work!", zap.Error(err))
 				writer.WriteHeader(http.StatusInternalServerError)
 				writer.Write([]byte("Internal error while encode content to gzip: " + err.Error()))
 				return
@@ -47,7 +46,7 @@ func getZipMiddleware(logger *zap.Logger) func(handler http.Handler) http.Handle
 			if strings.Contains(request.Header.Get("Content-Encoding"), "gzip") {
 				request.Body, err = gzip.NewReader(request.Body)
 				if err != nil {
-					logger.Fatal("Internal error while encode body content to gzip: " + err.Error())
+					logger.Fatal("Internal error while encode body content to gzip", zap.Error(err))
 				}
 			}
 
