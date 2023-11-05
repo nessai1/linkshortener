@@ -11,20 +11,20 @@ type HashToLink map[string]Link
 
 type Link struct {
 	Value     string
-	OwnerUUID *string
+	OwnerUUID string
 	IsDeleted bool
 }
 
 type Hash struct {
 	Value     string
-	OwnerUUID *string
+	OwnerUUID string
 }
 
 type KeyValueRow struct {
-	Key       string  `json:"key"`
-	Value     string  `json:"value"`
-	OwnerUUID *string `json:"owner_uuid"`
-	IsDeleted bool    `json:"is_deleted"`
+	Key       string `json:"key"`
+	Value     string `json:"value"`
+	OwnerUUID string `json:"owner_uuid"`
+	IsDeleted bool   `json:"is_deleted"`
 }
 
 var ErrURLIntersection = errors.New("inserting URL not unique")
@@ -65,7 +65,7 @@ func (storage *Storage) FindByUserUUID(userUUID string) []KeyValueRow {
 	links := make([]KeyValueRow, 0)
 	for hash, link := range storage.hl {
 
-		if link.OwnerUUID != nil && *link.OwnerUUID == userUUID {
+		if link.OwnerUUID == userUUID {
 			links = append(links, KeyValueRow{
 				Key:       hash,
 				Value:     link.Value,
@@ -129,7 +129,7 @@ func deleteWorker(hashItemsChannel <-chan Hash, storage *Storage) {
 			continue
 		}
 
-		if !rs.IsDeleted && (*rs.OwnerUUID == *hashItem.OwnerUUID) {
+		if !rs.IsDeleted && (rs.OwnerUUID == hashItem.OwnerUUID) {
 			val := storage.hl[hashItem.Value] // by get method we already know that row exists
 			val.IsDeleted = true
 			storage.hl[hashItem.Value] = val

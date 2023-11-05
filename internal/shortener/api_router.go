@@ -83,7 +83,7 @@ func (application *Application) apiHandleAddURL(writer http.ResponseWriter, requ
 
 	hash, err := application.createResource(linkstorage.Link{
 		Value:     requestBody.URL,
-		OwnerUUID: &UserUUID,
+		OwnerUUID: UserUUID,
 	})
 	if err != nil {
 
@@ -154,7 +154,7 @@ func (application *Application) apiHandleAddBatchURL(writer http.ResponseWriter,
 		innerKWRows[i] = linkstorage.KeyValueRow{
 			Key:       hash,
 			Value:     item.OriginalURL,
-			OwnerUUID: &UserUUID,
+			OwnerUUID: UserUUID,
 		}
 		expectedResult[i] = BatchItemResponse{
 			CorrelationID: item.CorrelationID,
@@ -236,7 +236,7 @@ func (application *Application) apiHandleDeleteURLs(writer http.ResponseWriter, 
 		for _, val := range requestBody {
 			deleteBatch = append(deleteBatch, linkstorage.Hash{
 				Value:     val,
-				OwnerUUID: &UserUUID,
+				OwnerUUID: UserUUID,
 			})
 		}
 

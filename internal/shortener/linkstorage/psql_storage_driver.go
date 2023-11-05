@@ -20,7 +20,14 @@ func (driver *PSQLStorageDriver) Save(hl HashToLink) error {
 	}
 
 	for key, val := range hl {
-		_, err = preparedInsert.Exec(key, val.Value, val.OwnerUUID, val.IsDeleted)
+		var ownerUUID *string
+		if val.OwnerUUID != "" {
+			ownerUUID = &val.OwnerUUID
+		} else {
+			ownerUUID = nil
+		}
+
+		_, err = preparedInsert.Exec(key, val.Value, ownerUUID, val.IsDeleted)
 		if err != nil {
 			return tx.Rollback()
 		}
@@ -49,15 +56,25 @@ func (driver *PSQLStorageDriver) Load() (HashToLink, error) {
 		if err = rows.Err(); err != nil {
 			return nil, err
 		}
-		err = rows.Scan(&kvrow.Key, &kvrow.Value, &kvrow.OwnerUUID)
+
+		var ownerUUID *string
+		err = rows.Scan(&kvrow.Key, &kvrow.Value, &ownerUUID)
 		if err != nil {
 			return nil, err
 		}
 
-		hl[kvrow.Key] = Link{
-			Value:     kvrow.Value,
-			OwnerUUID: kvrow.OwnerUUID,
+		if ownerUUID == nil {
+			hl[kvrow.Key] = Link{
+				Value:     kvrow.Value,
+				OwnerUUID: "",
+			}
+		} else {
+			hl[kvrow.Key] = Link{
+				Value:     kvrow.Value,
+				OwnerUUID: *ownerUUID,
+			}
 		}
+
 	}
 
 	return hl, nil
