@@ -181,28 +181,10 @@ func (application *Application) apiHandleAddBatchURL(writer http.ResponseWriter,
 }
 
 func (application *Application) apiHandleGetUserURLs(writer http.ResponseWriter, request *http.Request) {
-	cookie, err := request.Cookie(app.LoginCookieName)
+	UserUUID, err := app.RequireUserUUID(request)
 	if err != nil {
-		if errors.Is(err, http.ErrNoCookie) {
-			writer.WriteHeader(http.StatusUnauthorized)
-		} else {
-			application.logger.Error("Error while get user login cookie: %s", zap.Error(err))
-			writer.WriteHeader(http.StatusInternalServerError)
-		}
-
-		return
-	}
-
-	UserUUID, err := app.FetchUUID(cookie.Value)
-	if err != nil {
-		application.logger.Error("User sends invalid cookie", zap.Error(err))
-		c := &http.Cookie{
-			Name:   app.LoginCookieName,
-			Value:  "",
-			MaxAge: -1,
-		}
-		http.SetCookie(writer, c)
-		writer.WriteHeader(http.StatusUnauthorized)
+		application.logger.Error("Cannot get user UUID", zap.Error(err))
+		writer.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -226,28 +208,10 @@ func (application *Application) apiHandleGetUserURLs(writer http.ResponseWriter,
 }
 
 func (application *Application) apiHandleDeleteURLs(writer http.ResponseWriter, request *http.Request) {
-	cookie, err := request.Cookie(app.LoginCookieName)
+	UserUUID, err := app.RequireUserUUID(request)
 	if err != nil {
-		if errors.Is(err, http.ErrNoCookie) {
-			writer.WriteHeader(http.StatusUnauthorized)
-		} else {
-			application.logger.Error("Error while get user login cookie", zap.Error(err))
-			writer.WriteHeader(http.StatusInternalServerError)
-		}
-
-		return
-	}
-
-	UserUUID, err := app.FetchUUID(cookie.Value)
-	if err != nil {
-		application.logger.Error("User sends invalid cookie", zap.Error(err))
-		c := &http.Cookie{
-			Name:   app.LoginCookieName,
-			Value:  "",
-			MaxAge: -1,
-		}
-		http.SetCookie(writer, c)
-		writer.WriteHeader(http.StatusUnauthorized)
+		application.logger.Error("Cannot get user UUID", zap.Error(err))
+		writer.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 

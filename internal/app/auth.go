@@ -111,6 +111,12 @@ func GetAuthMiddleware(logger *zap.Logger) func(handler http.Handler) http.Handl
 			userUUID, err := FetchUUID(cookie.Value)
 			if err != nil {
 				logger.Info("User sends invalid cookies", zap.Error(err))
+				c := &http.Cookie{
+					Name:   LoginCookieName,
+					Value:  "",
+					MaxAge: -1,
+				}
+				http.SetCookie(writer, c)
 				writer.WriteHeader(http.StatusUnauthorized)
 				return
 			}
