@@ -8,6 +8,7 @@ import (
 	"github.com/nessai1/linkshortener/internal/app"
 	"github.com/nessai1/linkshortener/internal/shortener/encoder"
 	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
+	"go.uber.org/zap"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -46,15 +47,13 @@ type BatchItemResponse struct {
 
 type BatchResponse []BatchItemResponse
 
-// test comment
 func (application *Application) apiHandleAddURL(writer http.ResponseWriter, request *http.Request) {
-	UserUUID, err := app.Authorize(writer, request)
+	UserUUID, err := app.RequireUserUUID(request)
 	if err != nil {
 		writer.WriteHeader(http.StatusForbidden)
-		application.logger.Error(fmt.Sprintf("Cannot authorize user: %s", err.Error()))
+		application.logger.Error("Error while authorize user", zap.Error(err))
 		return
 	}
-	application.logger.Info(fmt.Sprintf("User auth: %s", UserUUID))
 
 	var buffer bytes.Buffer
 	_, err = buffer.ReadFrom(request.Body)
@@ -109,13 +108,12 @@ func (application *Application) apiHandleAddURL(writer http.ResponseWriter, requ
 }
 
 func (application *Application) apiHandleAddBatchURL(writer http.ResponseWriter, request *http.Request) {
-	UserUUID, err := app.Authorize(writer, request)
+	UserUUID, err := app.RequireUserUUID(request)
 	if err != nil {
 		writer.WriteHeader(http.StatusForbidden)
-		application.logger.Error(fmt.Sprintf("Cannot authorize user: %s", err.Error()))
+		application.logger.Error("Error while authorize user", zap.Error(err))
 		return
 	}
-	application.logger.Info(fmt.Sprintf("User auth: %s", UserUUID))
 
 	var buffer bytes.Buffer
 	_, err = buffer.ReadFrom(request.Body)
@@ -288,14 +286,20 @@ func (application *Application) apiHandleDeleteURLs(writer http.ResponseWriter, 
 }
 
 func (application *Application) getAPIRouter() *chi.Mux {
+	linksRouter := chi.NewRouter()
+	linksRouter.Use(app.GetRegisterMiddleware(application.logger))
+	linksRouter.Post("/", application.apiHandleAddURL)
+	linksRouter.Post("/batch", application.apiHandleAddBatchURL)
+
+	userRouter := chi.NewRouter()
+	userRouter.Use(app.GetAuthMiddleware(application.logger))
+	userRouter.Get("/urls", application.apiHandleGetUserURLs)
+	userRouter.Delete("/urls", application.apiHandleDeleteURLs)
+
 	router := chi.NewRouter()
-
 	router.Use(app.GetRequestLogMiddleware(application.logger, "API"))
-
-	router.Post("/shorten", application.apiHandleAddURL)
-	router.Post("/shorten/batch", application.apiHandleAddBatchURL)
-	router.Get("/user/urls", application.apiHandleGetUserURLs)
-	router.Delete("/user/urls", application.apiHandleDeleteURLs)
+	router.Mount("/shorten", linksRouter)
+	router.Mount("/user", userRouter)
 
 	return router
 }

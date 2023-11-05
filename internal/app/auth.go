@@ -3,6 +3,7 @@ package app
 import (
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"net/http"
 	"time"
 
@@ -52,8 +53,8 @@ func FetchUUID(sign string) (string, error) {
 	return claims.UserUUID, nil
 }
 
-// Authorize user if uuid expired or does not exist
-func Authorize(writer http.ResponseWriter, request *http.Request) (string, error) {
+// authorize user if uuid expired or does not exist
+func authorize(writer http.ResponseWriter, request *http.Request) (string, error) {
 	needToCreateSign, err := isNeedToCreateSign(request)
 	if err != nil {
 		return "", fmt.Errorf("error while check sign: %s", err.Error())
@@ -95,4 +96,49 @@ func isNeedToCreateSign(request *http.Request) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func GetAuthMiddleware(logger *zap.Logger) func(handler http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			cookie, err := request.Cookie(LoginCookieName)
+			if errors.Is(err, http.ErrNoCookie) {
+				logger.Debug("User sends request without login cookies")
+				writer.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+
+			userUUID, err := FetchUUID(cookie.Value)
+			if err != nil {
+				logger.Info("User sends invalid cookies", zap.Error(err))
+				writer.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+
+			logger.Debug("User successful authorized", zap.String("User UUID", userUUID))
+			next.ServeHTTP(writer, request)
+		})
+	}
+}
+
+func GetRegisterMiddleware(logger *zap.Logger) func(handler http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			_, err := authorize(writer, request)
+			if err != nil {
+				logger.Error("Error while register user", zap.Error(err))
+			}
+			next.ServeHTTP(writer, request)
+		})
+	}
+}
+
+func RequireUserUUID(request *http.Request) (string, error) {
+	cc, err := request.Cookie(LoginCookieName)
+	if err != nil {
+		return "", err
+	}
+
+	tk, err := FetchUUID(cc.Value)
+	return tk, err
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/nessai1/linkshortener/internal/app"
 	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
+	"go.uber.org/zap"
 	"io"
 	"net/http"
 
@@ -12,13 +13,12 @@ import (
 )
 
 func (application *Application) handleAddURL(writer http.ResponseWriter, request *http.Request) {
-	UserUUID, err := app.Authorize(writer, request)
+	UserUUID, err := app.RequireUserUUID(request)
 	if err != nil {
 		writer.WriteHeader(http.StatusForbidden)
-		application.logger.Error(fmt.Sprintf("Cannot authorize user: %s", err.Error()))
+		application.logger.Error("Error while authorize user", zap.Error(err))
 		return
 	}
-	application.logger.Info(fmt.Sprintf("User auth: %s", UserUUID))
 
 	body, err := io.ReadAll(request.Body)
 	if err != nil {
@@ -101,6 +101,7 @@ func (application *Application) getPublicRouter() *chi.Mux {
 	router := chi.NewRouter()
 
 	router.Use(app.GetRequestLogMiddleware(application.logger, "PUBLIC"))
+	router.Use(app.GetRegisterMiddleware(application.logger))
 
 	router.Post("/", application.handleAddURL)
 	router.Get("/{token}", application.handleGetURL)
