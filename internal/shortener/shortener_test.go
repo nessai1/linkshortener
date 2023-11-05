@@ -69,9 +69,12 @@ func TestApplication_handleAddURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			handler := app.GetRegisterMiddleware(testingApp.logger)
+			wrappedHandler := handler(http.HandlerFunc(testingApp.handleAddURL))
+
 			r := httptest.NewRequest(http.MethodPost, serviceURL, strings.NewReader(tt.addr))
 			w := httptest.NewRecorder()
-			testingApp.handleAddURL(w, r)
+			wrappedHandler.ServeHTTP(w, r)
 			res := w.Result()
 
 			assert.Equalf(t, tt.wantedRequest.status, res.StatusCode,
