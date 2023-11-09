@@ -15,8 +15,10 @@ import (
 const LoginCookieName = "LINKSHORTER_USER"
 const SignSecret = "unkTpTVMUcHQmgWXADBpcueGlcBAVXHAD2zUAuQCzD0MOKYhcg6Cvjrarl9RMmDUXRZuQz36S8Hs0Ak3OgkQy8vweiYtF2NaVV3qZLDvKYd75zaU1InkwRUEHUj01gkbSItyLh5V2eLO7lHAmpTYQ7N0CjOElRKeTIe23HEC4rAfDAavOLKATqrMKJnCzQvLNSaMPhzXpo9MzbHHfbPImn6tmVQiK9h63tKSQx3Dz0Mj2A8NHef3cvCEHC"
 const TokenTTL = time.Hour * 1
-const ContextUserUUIDKey = "UserUUIDKey"
+const ContextUserUUIDKey ContextAuthKey = "UserUUIDKey"
 
+type ContextAuthKey string
+type ContextKeyUserUUIDKey string
 type UserUUID string
 
 type Claims struct {
