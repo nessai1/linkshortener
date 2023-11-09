@@ -239,7 +239,7 @@ func (application *Application) apiHandleDeleteURLs(writer http.ResponseWriter, 
 		return
 	}
 
-	go func() {
+	go func(userUUID string) {
 		deleteBatch := make([]linkstorage.Hash, 0)
 		for _, val := range requestBody {
 			deleteBatch = append(deleteBatch, linkstorage.Hash{
@@ -252,7 +252,7 @@ func (application *Application) apiHandleDeleteURLs(writer http.ResponseWriter, 
 		if err != nil {
 			application.logger.Error("Error while delete user links", zap.String("User UUID", userUUID))
 		}
-	}()
+	}(userUUID)
 	writer.WriteHeader(http.StatusAccepted)
 }
 
