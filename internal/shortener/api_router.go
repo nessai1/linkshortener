@@ -55,7 +55,7 @@ func (application *Application) apiHandleAddURL(writer http.ResponseWriter, requ
 		return
 	}
 
-	userUUID := userUUIDCtxValue.(string)
+	userUUID := userUUIDCtxValue.(app.UserUUID)
 
 	var buffer bytes.Buffer
 	_, err := buffer.ReadFrom(request.Body)
@@ -85,7 +85,7 @@ func (application *Application) apiHandleAddURL(writer http.ResponseWriter, requ
 
 	hash, err := application.createResource(linkstorage.Link{
 		Value:     requestBody.URL,
-		OwnerUUID: userUUID,
+		OwnerUUID: string(userUUID),
 	})
 	if err != nil {
 
@@ -116,7 +116,7 @@ func (application *Application) apiHandleAddBatchURL(writer http.ResponseWriter,
 		return
 	}
 
-	userUUID := userUUIDCtxValue.(string)
+	userUUID := userUUIDCtxValue.(app.UserUUID)
 
 	var buffer bytes.Buffer
 	_, err := buffer.ReadFrom(request.Body)
@@ -158,7 +158,7 @@ func (application *Application) apiHandleAddBatchURL(writer http.ResponseWriter,
 		innerKWRows[i] = linkstorage.KeyValueRow{
 			Key:       hash,
 			Value:     item.OriginalURL,
-			OwnerUUID: userUUID,
+			OwnerUUID: string(userUUID),
 		}
 		expectedResult[i] = BatchItemResponse{
 			CorrelationID: item.CorrelationID,
@@ -192,10 +192,10 @@ func (application *Application) apiHandleGetUserURLs(writer http.ResponseWriter,
 		return
 	}
 
-	userUUID := userUUIDCtxValue.(string)
+	userUUID := userUUIDCtxValue.(app.UserUUID)
 
 	result := make([]GetUserURLsResult, 0)
-	rows := application.storage.FindByUserUUID(userUUID)
+	rows := application.storage.FindByUserUUID(string(userUUID))
 	if len(rows) == 0 {
 		writer.WriteHeader(http.StatusNoContent)
 		return
@@ -221,7 +221,7 @@ func (application *Application) apiHandleDeleteURLs(writer http.ResponseWriter, 
 		return
 	}
 
-	userUUID := userUUIDCtxValue.(string)
+	userUUID := userUUIDCtxValue.(app.UserUUID)
 
 	var buffer bytes.Buffer
 	_, err := buffer.ReadFrom(request.Body)
@@ -239,18 +239,18 @@ func (application *Application) apiHandleDeleteURLs(writer http.ResponseWriter, 
 		return
 	}
 
-	go func(userUUID string) {
+	go func(userUUID app.UserUUID) {
 		deleteBatch := make([]linkstorage.Hash, 0)
 		for _, val := range requestBody {
 			deleteBatch = append(deleteBatch, linkstorage.Hash{
 				Value:     val,
-				OwnerUUID: userUUID,
+				OwnerUUID: string(userUUID),
 			})
 		}
 
 		err := application.storage.DeleteBatch(deleteBatch)
 		if err != nil {
-			application.logger.Error("Error while delete user links", zap.String("User UUID", userUUID))
+			application.logger.Error("Error while delete user links", zap.String("User UUID", string(userUUID)))
 		}
 	}(userUUID)
 	writer.WriteHeader(http.StatusAccepted)

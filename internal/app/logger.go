@@ -82,7 +82,7 @@ func GetRequestLogMiddleware(logger *zap.Logger, prefix string) func(handler htt
 			duration := time.Since(startTime)
 
 			signCookie, err := request.Cookie(LoginCookieName)
-			var userUUID string
+			var userUUID UserUUID
 			if err != nil {
 				userUUID = "undefined"
 			} else {
@@ -97,7 +97,7 @@ func GetRequestLogMiddleware(logger *zap.Logger, prefix string) func(handler htt
 				zap.String("URI", request.RequestURI),
 				zap.String("Method", request.Method),
 				zap.Int64("Duration", int64(duration)),
-				zap.String("User UUID", userUUID),
+				zap.String("User UUID", string(userUUID)),
 			)
 
 			logger.Info(

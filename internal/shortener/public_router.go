@@ -20,7 +20,7 @@ func (application *Application) handleAddURL(writer http.ResponseWriter, request
 		return
 	}
 
-	userUUID := userUUIDCtxValue.(string)
+	userUUID := userUUIDCtxValue.(app.UserUUID)
 
 	body, err := io.ReadAll(request.Body)
 	if err != nil {
@@ -39,7 +39,7 @@ func (application *Application) handleAddURL(writer http.ResponseWriter, request
 
 	hash, err := application.createResource(linkstorage.Link{
 		Value:     string(body),
-		OwnerUUID: userUUID,
+		OwnerUUID: string(userUUID),
 	})
 
 	if err != nil {

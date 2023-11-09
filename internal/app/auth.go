@@ -17,6 +17,8 @@ const SignSecret = "unkTpTVMUcHQmgWXADBpcueGlcBAVXHAD2zUAuQCzD0MOKYhcg6Cvjrarl9R
 const TokenTTL = time.Hour * 1
 const ContextUserUUIDKey = "UserUUIDKey"
 
+type UserUUID string
+
 type Claims struct {
 	jwt.RegisteredClaims
 	UserUUID string
@@ -42,7 +44,7 @@ func GenerateSign(UUID string) (string, error) {
 	return tokenString, nil
 }
 
-func FetchUUID(sign string) (string, error) {
+func FetchUUID(sign string) (UserUUID, error) {
 	claims := &Claims{}
 	_, err := jwt.ParseWithClaims(sign, claims, func(t *jwt.Token) (interface{}, error) {
 		return []byte(SignSecret), nil
@@ -52,19 +54,19 @@ func FetchUUID(sign string) (string, error) {
 		return "", err
 	}
 
-	return claims.UserUUID, nil
+	return UserUUID(claims.UserUUID), nil
 }
 
 // authorize user if uuid expired or does not exist
-func authorize(writer http.ResponseWriter, request *http.Request) (string, error) {
+func authorize(writer http.ResponseWriter, request *http.Request) (UserUUID, error) {
 	needToCreateSign, err := isNeedToCreateSign(request)
 	if err != nil {
 		return "", fmt.Errorf("error while check sign: %s", err.Error())
 	}
 
 	if needToCreateSign {
-		UserUUID := GenerateUserUUID()
-		sign, err := GenerateSign(UserUUID)
+		userUUID := GenerateUserUUID()
+		sign, err := GenerateSign(userUUID)
 		if err != nil {
 			return "", fmt.Errorf("cannot generate signed user UUID: %s", err.Error())
 		} else {
@@ -75,7 +77,7 @@ func authorize(writer http.ResponseWriter, request *http.Request) (string, error
 
 			request.AddCookie(&authCookie)
 			http.SetCookie(writer, &authCookie)
-			return UserUUID, nil
+			return UserUUID(userUUID), nil
 		}
 	} else {
 		cc, _ := request.Cookie(LoginCookieName)
@@ -126,7 +128,7 @@ func GetAuthMiddleware(logger *zap.Logger) func(handler http.Handler) http.Handl
 			ctx := context.WithValue(request.Context(), ContextUserUUIDKey, userUUID)
 			request = request.WithContext(ctx)
 
-			logger.Debug("User successful authorized", zap.String("User UUID", userUUID))
+			logger.Debug("User successful authorized", zap.String("User UUID", string(userUUID)))
 			next.ServeHTTP(writer, request)
 		})
 	}
