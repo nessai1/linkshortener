@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"go.uber.org/zap"
@@ -14,6 +15,7 @@ import (
 const LoginCookieName = "LINKSHORTER_USER"
 const SignSecret = "unkTpTVMUcHQmgWXADBpcueGlcBAVXHAD2zUAuQCzD0MOKYhcg6Cvjrarl9RMmDUXRZuQz36S8Hs0Ak3OgkQy8vweiYtF2NaVV3qZLDvKYd75zaU1InkwRUEHUj01gkbSItyLh5V2eLO7lHAmpTYQ7N0CjOElRKeTIe23HEC4rAfDAavOLKATqrMKJnCzQvLNSaMPhzXpo9MzbHHfbPImn6tmVQiK9h63tKSQx3Dz0Mj2A8NHef3cvCEHC"
 const TokenTTL = time.Hour * 1
+const ContextUserUUIDKey = "UserUUIDKey"
 
 type Claims struct {
 	jwt.RegisteredClaims
@@ -121,6 +123,9 @@ func GetAuthMiddleware(logger *zap.Logger) func(handler http.Handler) http.Handl
 				return
 			}
 
+			ctx := context.WithValue(request.Context(), ContextUserUUIDKey, userUUID)
+			request = request.WithContext(ctx)
+
 			logger.Debug("User successful authorized", zap.String("User UUID", userUUID))
 			next.ServeHTTP(writer, request)
 		})
@@ -130,21 +135,15 @@ func GetAuthMiddleware(logger *zap.Logger) func(handler http.Handler) http.Handl
 func GetRegisterMiddleware(logger *zap.Logger) func(handler http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			_, err := authorize(writer, request)
+			userUUID, err := authorize(writer, request)
 			if err != nil {
 				logger.Error("Error while register user", zap.Error(err))
 			}
+
+			ctx := context.WithValue(request.Context(), ContextUserUUIDKey, userUUID)
+			request = request.WithContext(ctx)
+
 			next.ServeHTTP(writer, request)
 		})
 	}
-}
-
-func RequireUserUUID(request *http.Request) (string, error) {
-	cc, err := request.Cookie(LoginCookieName)
-	if err != nil {
-		return "", err
-	}
-
-	tk, err := FetchUUID(cc.Value)
-	return tk, err
 }

@@ -48,15 +48,17 @@ type BatchItemResponse struct {
 type BatchResponse []BatchItemResponse
 
 func (application *Application) apiHandleAddURL(writer http.ResponseWriter, request *http.Request) {
-	UserUUID, err := app.RequireUserUUID(request)
-	if err != nil {
+	userUUIDCtxValue := request.Context().Value(app.ContextUserUUIDKey)
+	if userUUIDCtxValue == nil {
 		writer.WriteHeader(http.StatusForbidden)
-		application.logger.Error("Error while authorize user", zap.Error(err))
+		application.logger.Error("No user UUID assigned")
 		return
 	}
 
+	userUUID := userUUIDCtxValue.(string)
+
 	var buffer bytes.Buffer
-	_, err = buffer.ReadFrom(request.Body)
+	_, err := buffer.ReadFrom(request.Body)
 	if err != nil {
 		application.logger.Debug("Client sends invalid request", zap.Error(err))
 		writer.WriteHeader(http.StatusRequestEntityTooLarge)
@@ -83,7 +85,7 @@ func (application *Application) apiHandleAddURL(writer http.ResponseWriter, requ
 
 	hash, err := application.createResource(linkstorage.Link{
 		Value:     requestBody.URL,
-		OwnerUUID: UserUUID,
+		OwnerUUID: userUUID,
 	})
 	if err != nil {
 
@@ -107,15 +109,17 @@ func (application *Application) apiHandleAddURL(writer http.ResponseWriter, requ
 }
 
 func (application *Application) apiHandleAddBatchURL(writer http.ResponseWriter, request *http.Request) {
-	UserUUID, err := app.RequireUserUUID(request)
-	if err != nil {
+	userUUIDCtxValue := request.Context().Value(app.ContextUserUUIDKey)
+	if userUUIDCtxValue == nil {
 		writer.WriteHeader(http.StatusForbidden)
-		application.logger.Error("Error while authorize user", zap.Error(err))
+		application.logger.Error("No user UUID assigned")
 		return
 	}
 
+	userUUID := userUUIDCtxValue.(string)
+
 	var buffer bytes.Buffer
-	_, err = buffer.ReadFrom(request.Body)
+	_, err := buffer.ReadFrom(request.Body)
 	if err != nil {
 		application.logger.Debug("Client sends invalid request", zap.Error(err))
 		writer.WriteHeader(http.StatusRequestEntityTooLarge)
@@ -154,7 +158,7 @@ func (application *Application) apiHandleAddBatchURL(writer http.ResponseWriter,
 		innerKWRows[i] = linkstorage.KeyValueRow{
 			Key:       hash,
 			Value:     item.OriginalURL,
-			OwnerUUID: UserUUID,
+			OwnerUUID: userUUID,
 		}
 		expectedResult[i] = BatchItemResponse{
 			CorrelationID: item.CorrelationID,
@@ -181,15 +185,17 @@ func (application *Application) apiHandleAddBatchURL(writer http.ResponseWriter,
 }
 
 func (application *Application) apiHandleGetUserURLs(writer http.ResponseWriter, request *http.Request) {
-	UserUUID, err := app.RequireUserUUID(request)
-	if err != nil {
-		application.logger.Error("Cannot get user UUID", zap.Error(err))
-		writer.WriteHeader(http.StatusInternalServerError)
+	userUUIDCtxValue := request.Context().Value(app.ContextUserUUIDKey)
+	if userUUIDCtxValue == nil {
+		writer.WriteHeader(http.StatusForbidden)
+		application.logger.Error("No user UUID assigned")
 		return
 	}
 
+	userUUID := userUUIDCtxValue.(string)
+
 	result := make([]GetUserURLsResult, 0)
-	rows := application.storage.FindByUserUUID(UserUUID)
+	rows := application.storage.FindByUserUUID(userUUID)
 	if len(rows) == 0 {
 		writer.WriteHeader(http.StatusNoContent)
 		return
@@ -208,15 +214,17 @@ func (application *Application) apiHandleGetUserURLs(writer http.ResponseWriter,
 }
 
 func (application *Application) apiHandleDeleteURLs(writer http.ResponseWriter, request *http.Request) {
-	UserUUID, err := app.RequireUserUUID(request)
-	if err != nil {
-		application.logger.Error("Cannot get user UUID", zap.Error(err))
-		writer.WriteHeader(http.StatusInternalServerError)
+	userUUIDCtxValue := request.Context().Value(app.ContextUserUUIDKey)
+	if userUUIDCtxValue == nil {
+		writer.WriteHeader(http.StatusForbidden)
+		application.logger.Error("No user UUID assigned")
 		return
 	}
 
+	userUUID := userUUIDCtxValue.(string)
+
 	var buffer bytes.Buffer
-	_, err = buffer.ReadFrom(request.Body)
+	_, err := buffer.ReadFrom(request.Body)
 	if err != nil {
 		application.logger.Debug("Client sends invalid request", zap.Error(err))
 		writer.WriteHeader(http.StatusRequestEntityTooLarge)
@@ -236,13 +244,13 @@ func (application *Application) apiHandleDeleteURLs(writer http.ResponseWriter, 
 		for _, val := range requestBody {
 			deleteBatch = append(deleteBatch, linkstorage.Hash{
 				Value:     val,
-				OwnerUUID: UserUUID,
+				OwnerUUID: userUUID,
 			})
 		}
 
 		err := application.storage.DeleteBatch(deleteBatch)
 		if err != nil {
-			application.logger.Error("Error while delete user links", zap.String("User UUID", UserUUID))
+			application.logger.Error("Error while delete user links", zap.String("User UUID", userUUID))
 		}
 	}()
 	writer.WriteHeader(http.StatusAccepted)

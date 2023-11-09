@@ -13,12 +13,14 @@ import (
 )
 
 func (application *Application) handleAddURL(writer http.ResponseWriter, request *http.Request) {
-	UserUUID, err := app.RequireUserUUID(request)
-	if err != nil {
+	userUUIDCtxValue := request.Context().Value(app.ContextUserUUIDKey)
+	if userUUIDCtxValue == nil {
 		writer.WriteHeader(http.StatusForbidden)
-		application.logger.Error("Error while authorize user", zap.Error(err))
+		application.logger.Error("No user UUID assigned")
 		return
 	}
+
+	userUUID := userUUIDCtxValue.(string)
 
 	body, err := io.ReadAll(request.Body)
 	if err != nil {
@@ -37,7 +39,7 @@ func (application *Application) handleAddURL(writer http.ResponseWriter, request
 
 	hash, err := application.createResource(linkstorage.Link{
 		Value:     string(body),
-		OwnerUUID: UserUUID,
+		OwnerUUID: userUUID,
 	})
 
 	if err != nil {
