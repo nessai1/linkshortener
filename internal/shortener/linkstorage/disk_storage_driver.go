@@ -15,12 +15,14 @@ type DiskStorageDriver struct {
 func (driver *DiskStorageDriver) Save(hl HashToLink) error {
 	kvstruct := make(keyValueStruct, 0)
 	for key, val := range hl {
-		if key == "" || val == "" {
+		if key == "" || val.Value == "" {
 			continue
 		}
 		kvstruct = append(kvstruct, KeyValueRow{
-			Key:   key,
-			Value: val,
+			Key:       key,
+			Value:     val.Value,
+			OwnerUUID: val.OwnerUUID,
+			IsDeleted: val.IsDeleted,
 		})
 	}
 
@@ -67,7 +69,10 @@ func (driver *DiskStorageDriver) Load() (HashToLink, error) {
 	}
 
 	for _, val := range kvsource {
-		hl[val.Key] = val.Value
+		hl[val.Key] = Link{
+			Value:     val.Value,
+			OwnerUUID: val.OwnerUUID,
+		}
 	}
 
 	return hl, file.Close()
