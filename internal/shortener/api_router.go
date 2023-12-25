@@ -79,8 +79,9 @@ func (application *Application) apiHandleAddURL(writer http.ResponseWriter, requ
 		application.logger.Debug("Client sends invalid URL", zap.String("URL", requestBody.URL))
 		errorAnswer := BadRequest{ErrorMsg: "Invalid pattern of URL"}
 		rs, _ := json.Marshal(errorAnswer)
-		writer.Write(rs)
 		writer.WriteHeader(http.StatusBadRequest)
+		writer.Write(rs)
+		return
 	}
 
 	hash, err := application.createResource(linkstorage.Link{

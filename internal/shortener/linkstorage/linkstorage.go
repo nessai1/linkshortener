@@ -167,3 +167,10 @@ func CreateStorage(driver StorageDriver) (*Storage, error) {
 
 	return &storage, nil
 }
+
+func CreateHashLinkStorage(hl HashToLink) *Storage {
+	return &Storage{
+		driver: nil,
+		hl:     hl,
+	}
+}
