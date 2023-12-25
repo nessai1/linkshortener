@@ -79,6 +79,24 @@ func TestApplication_apiHandleAddURL(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectedLink:   nil,
 		},
+		{
+			name: "Unsuccessful create: bad json",
+			input: InputDataJSON{
+				body:     `some unmarshalling shit`,
+				userUUID: ownerUUID,
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedLink:   nil,
+		},
+		{
+			name: "Unsuccessful create: not authorize",
+			input: InputDataJSON{
+				body:     `{"url": "https://yandex.ru"}`,
+				userUUID: "",
+			},
+			expectedStatus: http.StatusForbidden,
+			expectedLink:   nil,
+		},
 	}
 
 	for _, tt := range tests {
