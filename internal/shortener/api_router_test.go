@@ -113,7 +113,6 @@ func TestApplication_apiHandleAddURL(t *testing.T) {
 			testApp.apiHandleAddURL(w, r)
 
 			assert.Equal(t, tt.expectedStatus, w.Result().StatusCode)
-			defer w.Result().Body.Close()
 			if tt.expectedLink != nil {
 				var buffer bytes.Buffer
 				n, err := buffer.ReadFrom(w.Result().Body)
@@ -128,6 +127,7 @@ func TestApplication_apiHandleAddURL(t *testing.T) {
 
 				assert.Equal(t, *tt.expectedLink, existingHashes[hash])
 			}
+			w.Result().Body.Close()
 		})
 	}
 }
