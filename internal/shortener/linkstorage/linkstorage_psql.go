@@ -12,6 +12,7 @@ import (
 type PsqlLinkStorage struct {
 	db            *sql.DB
 	insertCommand *sql.Stmt
+	deleteCommand *sql.Stmt
 }
 
 func (storage *PsqlLinkStorage) Set(ctx context.Context, hash string, link Link) error {
@@ -114,18 +115,13 @@ func (storage *PsqlLinkStorage) LoadBatch(ctx context.Context, items []KeyValueR
 }
 
 func (storage *PsqlLinkStorage) DeleteBatch(ctx context.Context, items []Hash) error {
-	preparedDelete, err := storage.db.PrepareContext(ctx, "DELETE FROM hash_link WHERE hash = $1 AND owner_uuid = $2")
-	if err != nil {
-		return fmt.Errorf("[psql storage] error while delete batch (prepare command): %w", err)
-	}
-
 	tx, err := storage.db.BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("[psql storage] error while delete batch (start transaction): %w", err)
 	}
 
 	for _, item := range items {
-		_, err = preparedDelete.ExecContext(ctx, item.Value, item.OwnerUUID)
+		_, err = storage.deleteCommand.ExecContext(ctx, item.Value, item.OwnerUUID)
 		if err != nil {
 			rollbackErr := tx.Rollback()
 			if rollbackErr != nil {
@@ -158,5 +154,10 @@ func NewPsqlStorage(db *sql.DB) (*PsqlLinkStorage, error) {
 		return nil, fmt.Errorf("cannot prepare insert command while create psql storage: %w", err)
 	}
 
-	return &PsqlLinkStorage{db: db, insertCommand: insertCommand}, nil
+	deleteCommand, err := db.Prepare("UPDATE hash_link SET is_deleted = true WHERE hash = $1 AND owner_uuid = $2")
+	if err != nil {
+		return nil, fmt.Errorf("cannot prepare delete command while create psql storage: %w", err)
+	}
+
+	return &PsqlLinkStorage{db: db, insertCommand: insertCommand, deleteCommand: deleteCommand}, nil
 }
