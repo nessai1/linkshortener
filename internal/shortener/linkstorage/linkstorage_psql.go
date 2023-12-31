@@ -79,7 +79,7 @@ func (storage *PsqlLinkStorage) FindByUserUUID(ctx context.Context, userUUID str
 
 func (storage *PsqlLinkStorage) Ping() (bool, error) {
 	err := storage.db.Ping()
-	return err != nil, err
+	return err == nil, err
 }
 
 func (storage *PsqlLinkStorage) LoadBatch(ctx context.Context, items []KeyValueRow) error {
