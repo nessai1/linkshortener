@@ -216,9 +216,11 @@ func TestApplication_apiHandleAddBatchURL(t *testing.T) {
 				require.NoError(t, err, "Test expected created list, got error while read")
 				require.NotEqual(t, 0, n, "Test expected created list, got empty body")
 
+				innerBody := string(buffer.Bytes())
+
 				var result BatchResponse
 				err = json.Unmarshal(buffer.Bytes(), &result)
-				require.NoError(t, err, "Test expected created list, got error while unmarshal result body")
+				require.NoErrorf(t, err, "Test expected created list, got error while unmarshal result body, body: %s", innerBody)
 
 				assert.Equal(t, len(tt.expectedHashes), len(result), "Len of expected hashes and actual must be equal")
 				for _, item := range result {

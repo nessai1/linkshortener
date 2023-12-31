@@ -2,6 +2,7 @@ package linkstorage
 
 import (
 	"context"
+	"errors"
 )
 
 type MemoryLinkStorage struct {
@@ -55,7 +56,7 @@ func (storage *MemoryLinkStorage) LoadBatch(_ context.Context, items []KeyValueR
 		}
 
 		err := storage.Set(context.TODO(), item.Key, link)
-		if err != nil {
+		if err != nil && !errors.Is(err, ErrURLIntersection) {
 			return err
 		}
 	}
