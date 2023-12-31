@@ -113,6 +113,7 @@ func TestApplication_apiHandleAddURL(t *testing.T) {
 			testApp.apiHandleAddURL(w, r)
 
 			assert.Equal(t, tt.expectedStatus, w.Result().StatusCode)
+			r.Body.Close()
 			if tt.expectedLink != nil {
 				var buffer bytes.Buffer
 				n, err := buffer.ReadFrom(w.Result().Body)
