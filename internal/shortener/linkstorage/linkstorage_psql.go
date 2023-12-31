@@ -95,7 +95,7 @@ func (storage *PsqlLinkStorage) LoadBatch(ctx context.Context, items []KeyValueR
 			IsDeleted: item.IsDeleted,
 		}
 
-		if err = storage.Set(ctx, item.Key, link); !errors.Is(err, ErrURLIntersection) {
+		if err = storage.Set(ctx, item.Key, link); err != nil && !errors.Is(err, ErrURLIntersection) {
 			rollbackErr := tx.Rollback()
 			if rollbackErr != nil {
 				return fmt.Errorf("[psql storage] error while load link batch (rollback&set error): %w", errors.Join(rollbackErr, err))
