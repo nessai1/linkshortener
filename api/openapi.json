@@ -88,7 +88,7 @@
                   }
                 },
                 "example": {
-                  "result": "https://yandex.ru"
+                  "url": "https://yandex.ru"
                 }
               }
             }

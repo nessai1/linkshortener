@@ -2,6 +2,7 @@ package shortener
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -79,14 +80,19 @@ func (application *Application) apiHandleAddURL(writer http.ResponseWriter, requ
 		application.logger.Debug("Client sends invalid URL", zap.String("URL", requestBody.URL))
 		errorAnswer := BadRequest{ErrorMsg: "Invalid pattern of URL"}
 		rs, _ := json.Marshal(errorAnswer)
-		writer.Write(rs)
 		writer.WriteHeader(http.StatusBadRequest)
+		writer.Write(rs)
+		return
 	}
 
-	hash, err := application.createResource(linkstorage.Link{
-		Value:     requestBody.URL,
-		OwnerUUID: string(userUUID),
-	})
+	hash, err := application.createResource(
+		request.Context(),
+		linkstorage.Link{
+			Value:     requestBody.URL,
+			OwnerUUID: string(userUUID),
+		},
+	)
+
 	if err != nil {
 
 		if errors.Is(err, linkstorage.ErrURLIntersection) {
@@ -166,15 +172,7 @@ func (application *Application) apiHandleAddBatchURL(writer http.ResponseWriter,
 		}
 	}
 
-	if err = application.storage.LoadBatch(innerKWRows); err != nil {
-		msg := fmt.Sprintf("Error while loading batch: %s.", err.Error())
-		application.logger.Debug(msg)
-		errorAnswer := BadRequest{ErrorMsg: msg}
-		rs, _ := json.Marshal(errorAnswer)
-		writer.Write(rs)
-		writer.WriteHeader(http.StatusInternalServerError)
-	}
-
+	application.loadLinkBatchBackground(innerKWRows)
 	writer.Header().Set("Content-Type", "application/json")
 
 	requestResult, _ := json.Marshal(expectedResult)
@@ -182,6 +180,15 @@ func (application *Application) apiHandleAddBatchURL(writer http.ResponseWriter,
 	application.logger.Debug(fmt.Sprintf("Client success add batch with %d URLs  by API", len(requestBody)))
 	writer.WriteHeader(http.StatusCreated)
 	writer.Write(requestResult)
+}
+
+func (application *Application) loadLinkBatchBackground(items []linkstorage.KeyValueRow) {
+	go func() {
+		err := application.storage.LoadBatch(context.TODO(), items)
+		if err != nil {
+			application.logger.Error("error while load batch of items in background", zap.Error(err))
+		}
+	}()
 }
 
 func (application *Application) apiHandleGetUserURLs(writer http.ResponseWriter, request *http.Request) {
@@ -195,7 +202,7 @@ func (application *Application) apiHandleGetUserURLs(writer http.ResponseWriter,
 	userUUID := userUUIDCtxValue.(app.UserUUID)
 
 	result := make([]GetUserURLsResult, 0)
-	rows := application.storage.FindByUserUUID(string(userUUID))
+	rows := application.storage.FindByUserUUID(request.Context(), string(userUUID))
 	if len(rows) == 0 {
 		writer.WriteHeader(http.StatusNoContent)
 		return
@@ -248,7 +255,7 @@ func (application *Application) apiHandleDeleteURLs(writer http.ResponseWriter, 
 			})
 		}
 
-		err := application.storage.DeleteBatch(deleteBatch)
+		err := application.storage.DeleteBatch(context.TODO(), deleteBatch)
 		if err != nil {
 			application.logger.Error("Error while delete user links", zap.String("User UUID", string(userUUID)))
 		}

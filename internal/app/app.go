@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 	"go.uber.org/zap"
 	"net/http"
 	"os"
@@ -26,6 +27,10 @@ func Run(application Application, envType EnvType) {
 
 	for _, controller := range application.GetControllers() {
 		router.Mount(controller.Path, controller.Mux)
+	}
+
+	if envType == Development {
+		router.Mount("/debug", middleware.Profiler())
 	}
 
 	logger.Info("Starting server", zap.String("Server addr", application.GetAddr()))
