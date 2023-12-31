@@ -113,6 +113,7 @@ func TestApplication_apiHandleAddURL(t *testing.T) {
 			testApp.apiHandleAddURL(w, r)
 
 			assert.Equal(t, tt.expectedStatus, w.Result().StatusCode)
+			defer w.Result().Body.Close()
 			if tt.expectedLink != nil {
 				var buffer bytes.Buffer
 				n, err := buffer.ReadFrom(w.Result().Body)
@@ -210,13 +211,14 @@ func TestApplication_apiHandleAddBatchURL(t *testing.T) {
 			testApp.apiHandleAddBatchURL(writer, request)
 
 			assert.Equal(t, tt.expectedStatus, writer.Result().StatusCode)
+			defer writer.Result().Body.Close()
+
 			if tt.expectedHashes != nil {
 				var buffer bytes.Buffer
 				n, err := buffer.ReadFrom(writer.Body)
 				require.NoError(t, err, "Test expected created list, got error while read")
 				require.NotEqual(t, 0, n, "Test expected created list, got empty body")
-
-				innerBody := string(buffer.Bytes())
+				innerBody := buffer.String()
 
 				var result BatchResponse
 				err = json.Unmarshal(buffer.Bytes(), &result)
