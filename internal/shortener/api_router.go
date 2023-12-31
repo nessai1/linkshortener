@@ -172,15 +172,7 @@ func (application *Application) apiHandleAddBatchURL(writer http.ResponseWriter,
 		}
 	}
 
-	if err = application.storage.LoadBatch(request.Context(), innerKWRows); err != nil {
-		msg := fmt.Sprintf("Error while loading batch: %s.", err.Error())
-		application.logger.Debug(msg)
-		errorAnswer := BadRequest{ErrorMsg: msg}
-		rs, _ := json.Marshal(errorAnswer)
-		writer.Write(rs)
-		writer.WriteHeader(http.StatusInternalServerError)
-	}
-
+	application.loadLinkBatchBackground(innerKWRows)
 	writer.Header().Set("Content-Type", "application/json")
 
 	requestResult, _ := json.Marshal(expectedResult)
@@ -188,6 +180,15 @@ func (application *Application) apiHandleAddBatchURL(writer http.ResponseWriter,
 	application.logger.Debug(fmt.Sprintf("Client success add batch with %d URLs  by API", len(requestBody)))
 	writer.WriteHeader(http.StatusCreated)
 	writer.Write(requestResult)
+}
+
+func (application *Application) loadLinkBatchBackground(items []linkstorage.KeyValueRow) {
+	go func() {
+		err := application.storage.LoadBatch(context.TODO(), items)
+		if err != nil {
+			application.logger.Error("error while load batch of items in background", zap.Error(err))
+		}
+	}()
 }
 
 func (application *Application) apiHandleGetUserURLs(writer http.ResponseWriter, request *http.Request) {
