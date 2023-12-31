@@ -1,6 +1,7 @@
 package linkstorage
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"runtime"
@@ -41,6 +42,18 @@ type StorageDriver interface {
 type Storage struct {
 	driver StorageDriver
 	hl     HashToLink
+}
+
+type LinkStorage interface {
+	Set(ctx context.Context, hash string, link Link) error
+	Get(ctx context.Context, hash string) (Link, bool)
+	FindByUserUUID(ctx context.Context, userUUID string) []KeyValueRow
+	Ping() (bool, error)
+
+	LoadBatch(ctx context.Context, items []KeyValueRow) error
+	DeleteBatch(ctx context.Context, items []Hash) error
+
+	BeforeShutdown() error
 }
 
 func (storage *Storage) Set(hash string, link Link) error {

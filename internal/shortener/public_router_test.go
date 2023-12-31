@@ -1,6 +1,7 @@
 package shortener
 
 import (
+	"context"
 	"github.com/nessai1/linkshortener/internal/app"
 	"github.com/nessai1/linkshortener/internal/shortener/encoder"
 	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
@@ -19,7 +20,7 @@ func TestApplication_handleAddURL(t *testing.T) {
 		body   string
 	}
 
-	testingApp := GetApplication(&Config{StorageDriver: nil})
+	testingApp := GetApplication(&Config{LinkStorage: linkstorage.NewMemoryStorage(nil)})
 	testingApp.logger, _ = app.CreateAppLogger(app.Development)
 	serviceURL := "http://" + testingApp.GetAddr() + "/"
 
@@ -94,14 +95,17 @@ func TestApplication_handleGetURL(t *testing.T) {
 		location string
 	}
 
-	testingApp := GetApplication(&Config{StorageDriver: nil})
+	testingApp := GetApplication(&Config{LinkStorage: linkstorage.NewMemoryStorage(nil)})
 	testingApp.logger, _ = app.CreateAppLogger(app.Development)
 	serviceURL := "http://" + testingApp.GetAddr() + "/"
 	testURL := "https://ya.ru"
-	testHash, err := testingApp.createResource(linkstorage.Link{
-		Value:     testURL,
-		OwnerUUID: "",
-	})
+	testHash, err := testingApp.createResource(
+		context.TODO(),
+		linkstorage.Link{
+			Value:     testURL,
+			OwnerUUID: "",
+		},
+	)
 	require.NoError(t, err, "Error while create test url")
 
 	tests := []struct {

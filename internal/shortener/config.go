@@ -19,15 +19,15 @@ import (
 
 func BuildAppConfig() (*Config, error) {
 	config := fetchConfig()
-	storageDriver, err := chooseDriver(&config)
+	linkStorage, err := chooseLinkStorage(&config)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cannot build app config: %w", err)
 	}
 
 	shortenerConfig := Config{
-		ServerAddr:    config.ServerAddr,
-		TokenTail:     config.TokenTail,
-		StorageDriver: storageDriver,
+		ServerAddr:  config.ServerAddr,
+		TokenTail:   config.TokenTail,
+		LinkStorage: linkStorage,
 	}
 
 	return &shortenerConfig, nil
@@ -90,23 +90,32 @@ func initMigrations(db *sql.DB) error {
 	return nil
 }
 
-func chooseDriver(config *InitConfig) (linkstorage.StorageDriver, error) {
-	var storageDriver linkstorage.StorageDriver
-
+func chooseLinkStorage(config *InitConfig) (linkstorage.LinkStorage, error) {
 	if config.SQLConnection != "" {
 		db, err := sql.Open("pgx", config.SQLConnection)
 		if err != nil {
 			return nil, err
 		}
 
-		storageDriver = &linkstorage.PSQLStorageDriver{SQLDriver: db}
 		err = initMigrations(db)
 		if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 			return nil, err
 		}
+
+		linkStorage, err := linkstorage.NewPsqlStorage(db)
+		if err != nil {
+			return nil, fmt.Errorf("cannot choose psql driver: %w", err)
+		}
+
+		return linkStorage, nil
 	} else if config.FileStoragePath != "" {
-		storageDriver = &linkstorage.DiskStorageDriver{Path: config.FileStoragePath}
+		linkStorage, err := linkstorage.NewFileStorage(config.FileStoragePath)
+		if err != nil {
+			return nil, fmt.Errorf("cannot choose file driver: %w", err)
+		}
+
+		return linkStorage, nil
 	}
 
-	return storageDriver, nil
+	return linkstorage.NewMemoryStorage(nil), nil
 }
