@@ -110,7 +110,6 @@ func TestApplication_apiHandleAddURL(t *testing.T) {
 			}
 
 			w := httptest.NewRecorder()
-			defer w.Result().Body.Close() // IDK why autotests say to close it, but it has already closed
 			testApp.apiHandleAddURL(w, r)
 
 			assert.Equal(t, tt.expectedStatus, w.Result().StatusCode)
@@ -128,7 +127,7 @@ func TestApplication_apiHandleAddURL(t *testing.T) {
 
 				assert.Equal(t, *tt.expectedLink, existingHashes[hash])
 			}
-			w.Result().Body.Close()
+			w.Result().Body.Close() // IDK why autotests say to close it, but it has already closed
 		})
 	}
 }
@@ -209,7 +208,6 @@ func TestApplication_apiHandleAddBatchURL(t *testing.T) {
 			}
 
 			writer := httptest.NewRecorder()
-			defer writer.Result().Body.Close() // IDK why autotests say to close it, but it has already closed
 			testApp.apiHandleAddBatchURL(writer, request)
 
 			assert.Equal(t, tt.expectedStatus, writer.Result().StatusCode)
@@ -236,6 +234,7 @@ func TestApplication_apiHandleAddBatchURL(t *testing.T) {
 					}
 				}
 			}
+			writer.Result().Body.Close() // IDK why autotests say to close it, but it has already closed
 		})
 	}
 }
