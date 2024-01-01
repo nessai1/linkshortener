@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+
 	"github.com/nessai1/linkshortener/internal/app"
 	"github.com/nessai1/linkshortener/internal/shortener/encoder"
 	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
 	"go.uber.org/zap"
-	"net/http"
 
 	"github.com/go-chi/chi"
 )

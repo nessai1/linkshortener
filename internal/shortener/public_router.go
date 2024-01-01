@@ -3,11 +3,12 @@ package shortener
 import (
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+
 	"github.com/nessai1/linkshortener/internal/app"
 	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
 	"go.uber.org/zap"
-	"io"
-	"net/http"
 
 	"github.com/go-chi/chi"
 )

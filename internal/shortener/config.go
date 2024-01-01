@@ -5,8 +5,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
 	"os"
+
+	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 

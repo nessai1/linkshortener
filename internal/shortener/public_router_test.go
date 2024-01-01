@@ -2,16 +2,17 @@ package shortener
 
 import (
 	"context"
-	"github.com/nessai1/linkshortener/internal/app"
-	"github.com/nessai1/linkshortener/internal/shortener/encoder"
-	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/nessai1/linkshortener/internal/app"
+	"github.com/nessai1/linkshortener/internal/shortener/encoder"
+	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestApplication_handleAddURL(t *testing.T) {

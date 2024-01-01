@@ -3,11 +3,12 @@ package shortener
 import (
 	"context"
 	"errors"
+	"net/http"
+	"regexp"
+
 	"github.com/nessai1/linkshortener/internal/app"
 	"github.com/nessai1/linkshortener/internal/shortener/encoder"
 	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
-	"net/http"
-	"regexp"
 
 	"go.uber.org/zap"
 )

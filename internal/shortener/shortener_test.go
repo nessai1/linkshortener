@@ -3,13 +3,14 @@ package shortener
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strings"
+	"testing"
+
 	"github.com/go-chi/chi"
 	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
-	"net/http"
-	"strings"
-	"testing"
 )
 
 const TestTokenTail = "test"
