@@ -112,11 +112,13 @@ func TestApplication_apiHandleAddURL(t *testing.T) {
 
 			w := httptest.NewRecorder()
 			testApp.apiHandleAddURL(w, r)
+			res := w.Result()
+			defer res.Body.Close()
 
-			assert.Equal(t, tt.expectedStatus, w.Result().StatusCode)
+			assert.Equal(t, tt.expectedStatus, res.StatusCode)
 			if tt.expectedLink != nil {
 				var buffer bytes.Buffer
-				n, err := buffer.ReadFrom(w.Result().Body)
+				n, err := buffer.ReadFrom(res.Body)
 				require.NoError(t, err, "Test expected created link, got error while read body")
 				require.NotEqual(t, n, 0, "Test expected created link, got empty result body")
 
@@ -128,7 +130,6 @@ func TestApplication_apiHandleAddURL(t *testing.T) {
 
 				assert.Equal(t, *tt.expectedLink, existingHashes[hash])
 			}
-			w.Result().Body.Close() // IDK why autotests say to close it, but it has already closed
 		})
 	}
 }
@@ -210,9 +211,10 @@ func TestApplication_apiHandleAddBatchURL(t *testing.T) {
 
 			writer := httptest.NewRecorder()
 			testApp.apiHandleAddBatchURL(writer, request)
+			res := writer.Result()
+			defer res.Body.Close()
 
-			assert.Equal(t, tt.expectedStatus, writer.Result().StatusCode)
-			defer writer.Result().Body.Close()
+			assert.Equal(t, tt.expectedStatus, res.StatusCode)
 
 			if tt.expectedHashes != nil {
 				var buffer bytes.Buffer
@@ -235,7 +237,6 @@ func TestApplication_apiHandleAddBatchURL(t *testing.T) {
 					}
 				}
 			}
-			writer.Result().Body.Close() // IDK why autotests say to close it, but it has already closed
 		})
 	}
 }
