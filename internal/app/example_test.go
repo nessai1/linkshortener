@@ -11,22 +11,22 @@ type MyBeautifulApp struct {
 	logger *zap.Logger
 }
 
-func (m MyBeautifulApp) GetAddr() string {
+func (m *MyBeautifulApp) GetAddr() string {
 	// Возвращаем адрес, по которому будет запущено приложение
 	return ":1337"
 }
 
-func (m MyBeautifulApp) SetLogger(logger *zap.Logger) {
+func (m *MyBeautifulApp) SetLogger(logger *zap.Logger) {
 	// Получаем логгер из внешнего источника
 	m.logger = logger
 }
 
-func (m MyBeautifulApp) OnBeforeClose() {
+func (m *MyBeautifulApp) OnBeforeClose() {
 	// Пишем в лог перед остановкой приложения
 	m.logger.Info("bye!")
 }
 
-func (m MyBeautifulApp) GetControllers() []app.Controller {
+func (m *MyBeautifulApp) GetControllers() []app.Controller {
 
 	// Создаем тестовую группу обработчиквов
 	mux := chi.NewMux()
@@ -52,5 +52,5 @@ func ExampleRun() {
 	myApp := MyBeautifulApp{}
 
 	// Запускаем приложение в режиме работы для разработки
-	app.Run(myApp, app.Development)
+	app.Run(&myApp, app.Development)
 }
