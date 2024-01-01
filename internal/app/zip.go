@@ -14,6 +14,7 @@ type gzipWriter struct {
 	Writer io.Writer
 }
 
+// Write обертка над методом Write  ResponseWriter-а для сжатия сообщений
 func (writer gzipWriter) Write(bytes []byte) (int, error) {
 	return writer.Writer.Write(bytes)
 }

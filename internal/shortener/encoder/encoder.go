@@ -5,9 +5,11 @@ import (
 )
 
 const (
+	// HashMinLength минимальная длина хеша от ссылки
 	HashMinLength = 5
 )
 
+// EncodeURL получает из переданной ссылки хеш длинной >= HashMinLength
 func EncodeURL(url string) (string, error) {
 	hd := hashids.NewData()
 	hd.Salt = url
