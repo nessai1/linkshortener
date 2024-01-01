@@ -18,6 +18,7 @@ func (writer gzipWriter) Write(bytes []byte) (int, error) {
 	return writer.Writer.Write(bytes)
 }
 
+// getZipMiddleware является middleware который добавляет поддержку сжатия данных запроса от клиента, делающего запрос на сервис
 func getZipMiddleware(logger *zap.Logger) func(handler http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {

@@ -71,6 +71,7 @@ func getLogLevelByEnvType(envType EnvType) (zapcore.Level, error) {
 	return 0, fmt.Errorf("unexpected EnvType got (%d)", envType)
 }
 
+// GetRequestLogMiddleware является middleware который логирует информацию о запросах, которые проходят через методы покрытые этим middleware
 func GetRequestLogMiddleware(logger *zap.Logger, prefix string) func(handler http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {

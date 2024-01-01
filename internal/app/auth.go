@@ -105,6 +105,7 @@ func isNeedToCreateSign(request *http.Request) (bool, error) {
 	return true, nil
 }
 
+// GetAuthMiddleware является middleware который добавляет поддержку авторизации UUID пользователя, делающего запрос на сервис
 func GetAuthMiddleware(logger *zap.Logger) func(handler http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -137,6 +138,7 @@ func GetAuthMiddleware(logger *zap.Logger) func(handler http.Handler) http.Handl
 	}
 }
 
+// GetAuthMiddleware является middleware который добавляет поддержку регистрации нового UUID пользователя, делающего запрос на сервис
 func GetRegisterMiddleware(logger *zap.Logger) func(handler http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
