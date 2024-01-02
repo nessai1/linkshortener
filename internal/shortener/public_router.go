@@ -3,11 +3,12 @@ package shortener
 import (
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+
 	"github.com/nessai1/linkshortener/internal/app"
 	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
 	"go.uber.org/zap"
-	"io"
-	"net/http"
 
 	"github.com/go-chi/chi"
 )
@@ -37,10 +38,13 @@ func (application *Application) handleAddURL(writer http.ResponseWriter, request
 		return
 	}
 
-	hash, err := application.createResource(linkstorage.Link{
-		Value:     string(body),
-		OwnerUUID: string(userUUID),
-	})
+	hash, err := application.createResource(
+		request.Context(),
+		linkstorage.Link{
+			Value:     string(body),
+			OwnerUUID: string(userUUID),
+		},
+	)
 
 	if err != nil {
 		if errors.Is(err, linkstorage.ErrURLIntersection) {
@@ -69,7 +73,7 @@ func (application *Application) handleGetURL(writer http.ResponseWriter, request
 		return
 	}
 
-	link, ok := application.storage.Get(token)
+	link, ok := application.storage.Get(request.Context(), token)
 	if !ok {
 		application.logger.Debug(fmt.Sprintf("Link storage doesn't contain link \"%s\"", link.Value))
 		writer.WriteHeader(http.StatusNotFound)

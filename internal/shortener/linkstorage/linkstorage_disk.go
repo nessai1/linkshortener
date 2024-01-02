@@ -8,13 +8,19 @@ import (
 	"path/filepath"
 )
 
-type DiskStorageDriver struct {
-	Path string
+// DiskLinkStorage структура, реализующая интерфейс LinkStorage через использование файловой системы
+type DiskLinkStorage struct {
+	MemoryLinkStorage
+	filePath string
 }
 
-func (driver *DiskStorageDriver) Save(hl HashToLink) error {
+func (storage *DiskLinkStorage) BeforeShutdown() error {
+	return storage.save()
+}
+
+func (storage *DiskLinkStorage) save() error {
 	kvstruct := make(keyValueStruct, 0)
-	for key, val := range hl {
+	for key, val := range storage.hl {
 		if key == "" || val.Value == "" {
 			continue
 		}
@@ -31,7 +37,7 @@ func (driver *DiskStorageDriver) Save(hl HashToLink) error {
 		return err
 	}
 
-	file, err := openFile(driver.Path, true)
+	file, err := openFile(storage.filePath, true)
 	if err != nil {
 		return err
 	}
@@ -44,18 +50,34 @@ func (driver *DiskStorageDriver) Save(hl HashToLink) error {
 	return file.Close()
 }
 
-func (driver *DiskStorageDriver) Load() (HashToLink, error) {
-	hl := make(HashToLink, 0)
+// NewFileStorage создает экземпляр хранилища DiskLinkStorage записывая и считывания данные из указанного файла filePath
+func NewFileStorage(filePath string) (*DiskLinkStorage, error) {
+	storage := DiskLinkStorage{
+		filePath: filePath,
+	}
 
-	file, err := openFile(driver.Path, false)
+	hl, err := readFile(filePath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error while create new file storage: %w", err)
+	}
+
+	storage.hl = hl
+
+	return &storage, nil
+}
+
+func readFile(filePath string) (HashToLink, error) {
+	hl := make(HashToLink)
+
+	file, err := openFile(filePath, false)
+	if err != nil {
+		return nil, fmt.Errorf("error while read file (open): %w", err)
 	}
 
 	var buffer bytes.Buffer
 	nBytes, err := buffer.ReadFrom(file)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error while read file (read bytes): %w", err)
 	}
 
 	if nBytes == 0 {
@@ -65,7 +87,7 @@ func (driver *DiskStorageDriver) Load() (HashToLink, error) {
 	var kvsource keyValueStruct
 	err = json.Unmarshal(buffer.Bytes(), &kvsource)
 	if err != nil {
-		return nil, fmt.Errorf("error while unmarshal source: %s", err.Error())
+		return nil, fmt.Errorf("error while read file (unmarshal): %s", err.Error())
 	}
 
 	for _, val := range kvsource {
@@ -76,14 +98,6 @@ func (driver *DiskStorageDriver) Load() (HashToLink, error) {
 	}
 
 	return hl, file.Close()
-}
-
-func (driver *DiskStorageDriver) Close() error {
-	return nil
-}
-
-func (driver *DiskStorageDriver) Ping() (bool, error) {
-	return true, nil
 }
 
 func openFile(path string, write bool) (*os.File, error) {

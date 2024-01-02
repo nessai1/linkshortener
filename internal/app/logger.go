@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// LoggingResponseWriter декоратор ResponseWriter для логирования доп инфоррмации о запросе
 type LoggingResponseWriter struct {
 	http.ResponseWriter
 	statusCode    int
@@ -17,6 +18,7 @@ type LoggingResponseWriter struct {
 	headerIsWrite bool
 }
 
+// WriteHeader обертка базового метода для записи информации о заголовках в лог
 func (lrw *LoggingResponseWriter) WriteHeader(code int) {
 	if lrw.headerIsWrite {
 		return
@@ -26,6 +28,7 @@ func (lrw *LoggingResponseWriter) WriteHeader(code int) {
 	lrw.headerIsWrite = true
 }
 
+// Write обертка базового метода для записи информации о длинне тела запроса в лог
 func (lrw *LoggingResponseWriter) Write(b []byte) (n int, err error) {
 	n, err = lrw.ResponseWriter.Write(b)
 
@@ -34,10 +37,12 @@ func (lrw *LoggingResponseWriter) Write(b []byte) (n int, err error) {
 	return
 }
 
+// NewLoggingResponseWriter создает обертку LoggingResponseWriter над ResponseWriter
 func NewLoggingResponseWriter(w http.ResponseWriter) *LoggingResponseWriter {
 	return &LoggingResponseWriter{w, http.StatusOK, 0, false}
 }
 
+// CreateAppLogger создает логгер zap.Logger исходя из режима работы приложения EnvType
 func CreateAppLogger(envType EnvType) (*zap.Logger, error) {
 	atom := zap.NewAtomicLevel()
 
@@ -71,6 +76,7 @@ func getLogLevelByEnvType(envType EnvType) (zapcore.Level, error) {
 	return 0, fmt.Errorf("unexpected EnvType got (%d)", envType)
 }
 
+// GetRequestLogMiddleware является middleware который логирует информацию о запросах, которые проходят через методы покрытые этим middleware
 func GetRequestLogMiddleware(logger *zap.Logger, prefix string) func(handler http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
