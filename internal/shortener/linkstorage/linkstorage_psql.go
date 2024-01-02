@@ -10,6 +10,7 @@ import (
 	"github.com/nessai1/linkshortener/internal/postgrescodes"
 )
 
+// PsqlLinkStorage структура, реализующая интерфейс LinkStorage через использование СУБД PostgreSQL
 type PsqlLinkStorage struct {
 	db            *sql.DB
 	insertCommand *sql.Stmt
@@ -145,6 +146,7 @@ func (storage *PsqlLinkStorage) BeforeShutdown() error {
 	return storage.db.Close()
 }
 
+// NewPsqlStorage создает новый экземпляр PsqlLinkStorage подключаясь по указанному PSQL соединению db
 func NewPsqlStorage(db *sql.DB) (*PsqlLinkStorage, error) {
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("cannot ping db while create psql storage: %w", err)

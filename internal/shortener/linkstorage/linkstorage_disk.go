@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 )
 
+// DiskLinkStorage структура, реализующая интерфейс LinkStorage через использование файловой системы
 type DiskLinkStorage struct {
 	MemoryLinkStorage
 	filePath string
@@ -49,6 +50,7 @@ func (storage *DiskLinkStorage) save() error {
 	return file.Close()
 }
 
+// NewFileStorage создает экземпляр хранилища DiskLinkStorage записывая и считывания данные из указанного файла filePath
 func NewFileStorage(filePath string) (*DiskLinkStorage, error) {
 	storage := DiskLinkStorage{
 		filePath: filePath,

@@ -5,6 +5,7 @@ import (
 	"errors"
 )
 
+// MemoryLinkStorage структура, реализующая интерфейс LinkStorage через использование структуры map
 type MemoryLinkStorage struct {
 	hl HashToLink
 }
@@ -80,6 +81,7 @@ func (storage *MemoryLinkStorage) BeforeShutdown() error {
 	return nil
 }
 
+// NewMemoryStorage создает экземпляр хранилища MemoryLinkStorage, в случае указания initData карта будет заполнена первоначальными данными из этой карты
 func NewMemoryStorage(initData HashToLink) *MemoryLinkStorage {
 	var hl HashToLink
 
