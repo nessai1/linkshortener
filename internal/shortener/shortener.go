@@ -13,12 +13,17 @@ import (
 	"go.uber.org/zap"
 )
 
+// Config рафинированная структура с конфигурацией, получаемая в результате обработки InitConfig
 type Config struct {
-	ServerAddr  string
-	TokenTail   string
+	// ServerAddr адрес сервера
+	ServerAddr string
+	// TokenTail префикс хешированной ссылки
+	TokenTail string
+	// LinkStorage репозиторий сокращенных ссылок
 	LinkStorage linkstorage.LinkStorage
 }
 
+// GetApplication сборка приложения на осонове переданной конфигурацинной структуры
 func GetApplication(config *Config) *Application {
 	application := Application{
 		config:  config,
@@ -28,6 +33,7 @@ func GetApplication(config *Config) *Application {
 	return &application
 }
 
+// Application конкретная реализация app.Application для приложения сокращателя ссылок
 type Application struct {
 	config  *Config
 	logger  *zap.Logger

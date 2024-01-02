@@ -18,6 +18,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
+// BuildAppConfig собирает конфигурацию для shortener приложения исходя из входящей конфигурации ENV&flags
 func BuildAppConfig() (*Config, error) {
 	config := fetchConfig()
 	linkStorage, err := chooseLinkStorage(&config)
@@ -34,10 +35,15 @@ func BuildAppConfig() (*Config, error) {
 	return &shortenerConfig, nil
 }
 
+// InitConfig сырые конфигурационные данные сервера
 type InitConfig struct {
-	ServerAddr      string
-	TokenTail       string
-	SQLConnection   string
+	// ServerAddr адрес сервера
+	ServerAddr string
+	// TokenTail префикс с которым будет возвращаться результат хеширования ссылки
+	TokenTail string
+	// SQLConnection строка с настройками соединения к СУБД
+	SQLConnection string
+	// FileStoragePath путь файла в который будет записывать файловый репозиторий ссылок
 	FileStoragePath string
 }
 

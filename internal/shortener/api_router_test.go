@@ -122,7 +122,7 @@ func TestApplication_apiHandleAddURL(t *testing.T) {
 				require.NoError(t, err, "Test expected created link, got error while read body")
 				require.NotEqual(t, n, 0, "Test expected created link, got empty result body")
 
-				var result AddURLRequestResult
+				var result addURLRequestResult
 				err = json.Unmarshal(buffer.Bytes(), &result)
 				require.NoError(t, err, "Test expected created link, got error while unmarshal body")
 				hash, err := fetchContentAfterTokenTail(result.Result)
@@ -223,7 +223,7 @@ func TestApplication_apiHandleAddBatchURL(t *testing.T) {
 				require.NotEqual(t, 0, n, "Test expected created list, got empty body")
 				innerBody := buffer.String()
 
-				var result BatchResponse
+				var result batchResponse
 				err = json.Unmarshal(buffer.Bytes(), &result)
 				require.NoErrorf(t, err, "Test expected created list, got error while unmarshal result body, body: %s", innerBody)
 
