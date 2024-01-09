@@ -150,6 +150,17 @@ func TestApplication_apiHandleAddBatchURL(t *testing.T) {
 		expectedHashes map[string]string // correlation id -> link
 	}{
 		{
+			name: "Successful create: one link",
+			input: InputDataJSON{
+				body:     `[{"correlation_id": "a", "original_url": "https://vk.com"}]`,
+				userUUID: ownerUUID,
+			},
+			expectedStatus: http.StatusCreated,
+			expectedHashes: map[string]string{
+				"a": vkHash,
+			},
+		},
+		{
 			name: "Successful create: two links",
 			input: InputDataJSON{
 				body:     `[{"correlation_id": "a", "original_url": "https://vk.com"},{"correlation_id": "b", "original_url": "https://ya.ru"}]`,
@@ -159,17 +170,6 @@ func TestApplication_apiHandleAddBatchURL(t *testing.T) {
 			expectedHashes: map[string]string{
 				"a": vkHash,
 				"b": yaHash,
-			},
-		},
-		{
-			name: "Successful create: one link",
-			input: InputDataJSON{
-				body:     `[{"correlation_id": "a", "original_url": "https://vk.com"}]`,
-				userUUID: ownerUUID,
-			},
-			expectedStatus: http.StatusCreated,
-			expectedHashes: map[string]string{
-				"a": vkHash,
 			},
 		},
 		{
