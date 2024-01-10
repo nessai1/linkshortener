@@ -14,6 +14,7 @@ type DiskLinkStorage struct {
 	filePath string
 }
 
+// BeforeShutdown выполняет сохранение данных о ссылках в файл в JSON-формате
 func (storage *DiskLinkStorage) BeforeShutdown() error {
 	return storage.save()
 }

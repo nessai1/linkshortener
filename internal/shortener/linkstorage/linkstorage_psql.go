@@ -17,6 +17,7 @@ type PsqlLinkStorage struct {
 	deleteCommand *sql.Stmt
 }
 
+// Set выполняет INSERT запрос новой ссылки в таблицу
 func (storage *PsqlLinkStorage) Set(ctx context.Context, hash string, link Link) error {
 	_, err := storage.insertCommand.ExecContext(ctx, hash, link.Value, link.OwnerUUID)
 
@@ -34,6 +35,7 @@ func (storage *PsqlLinkStorage) Set(ctx context.Context, hash string, link Link)
 	return nil
 }
 
+// Get выполняет SELECT запрос к таблице ссылок с условием совпадения указанного хеша
 func (storage *PsqlLinkStorage) Get(ctx context.Context, hash string) (Link, bool) {
 	link := Link{}
 
@@ -50,8 +52,9 @@ func (storage *PsqlLinkStorage) Get(ctx context.Context, hash string) (Link, boo
 	return link, true
 }
 
-// TODO: need to return error if some shit happened while query
+// FindByUserUUID выполняет SELECT запрос к таблице ссылок с условием совпадения userUUID
 func (storage *PsqlLinkStorage) FindByUserUUID(ctx context.Context, userUUID string) []KeyValueRow {
+	// TODO: need to return error if some shit happened while query
 	rows, err := storage.db.QueryContext(
 		ctx,
 		"SELECT hash, link, owner_uuid, is_deleted FROM hash_link WHERE owner_uuid = $1",
@@ -80,11 +83,13 @@ func (storage *PsqlLinkStorage) FindByUserUUID(ctx context.Context, userUUID str
 	return resultRows
 }
 
+// Ping обертка над методом Ping соединения с БД. Выполняет опрос соединения к БД
 func (storage *PsqlLinkStorage) Ping() (bool, error) {
 	err := storage.db.Ping()
 	return err == nil, err
 }
 
+// LoadBatch выполняет транзакцию INSERT запросов ссылок, исполняя внутри метод Set
 func (storage *PsqlLinkStorage) LoadBatch(ctx context.Context, items []KeyValueRow) error {
 	tx, err := storage.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -116,6 +121,7 @@ func (storage *PsqlLinkStorage) LoadBatch(ctx context.Context, items []KeyValueR
 	return nil
 }
 
+// DeleteBatch транзакционно удаляет пачку ссылок DELETE запросом
 func (storage *PsqlLinkStorage) DeleteBatch(ctx context.Context, items []Hash) error {
 	tx, err := storage.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -142,6 +148,7 @@ func (storage *PsqlLinkStorage) DeleteBatch(ctx context.Context, items []Hash) e
 	return nil
 }
 
+// BeforeShutdown выполняет закрытие соединения с БД
 func (storage *PsqlLinkStorage) BeforeShutdown() error {
 	return storage.db.Close()
 }

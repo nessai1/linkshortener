@@ -24,10 +24,11 @@ const (
 	tokenTTL   = time.Hour * 1
 )
 
-type (
-	ContextAuthKey string
-	UserUUID       string
-)
+// ContextAuthKey тип данных для хранения пользователького идентификатора в контексте
+type ContextAuthKey string
+
+// UserUUID тип данных пользовательского идентификатора
+type UserUUID string
 
 type claims struct {
 	jwt.RegisteredClaims

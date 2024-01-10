@@ -40,6 +40,7 @@ type Application struct {
 	storage linkstorage.LinkStorage
 }
 
+// OnBeforeClose выполняет закрытие хранилища перед завершением приложения
 func (application *Application) OnBeforeClose() {
 	application.logger.Info("Closing shorter application...")
 	err := application.storage.BeforeShutdown()
@@ -50,6 +51,7 @@ func (application *Application) OnBeforeClose() {
 	}
 }
 
+// GetAddr возвращает адрес по которому работает приложение сокращателя
 func (application *Application) GetAddr() string {
 	if configAddr := application.config.ServerAddr; configAddr != "" {
 		return configAddr
@@ -58,10 +60,12 @@ func (application *Application) GetAddr() string {
 	return "localhost:8080"
 }
 
+// SetLogger устанавливает логгер для приложения сокращателя ссылок
 func (application *Application) SetLogger(logger *zap.Logger) {
 	application.logger = logger
 }
 
+// GetControllers возвращает 2 контроллера: контроллер публичных обработчиков и обработчиков API
 func (application *Application) GetControllers() []app.Controller {
 	return []app.Controller{
 		{

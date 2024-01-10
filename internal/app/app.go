@@ -69,13 +69,14 @@ type Application interface {
 // EnvType идентификатор режима работы приложения
 type EnvType uint8
 
+// Список всех доступных режимов работы приложения
 const (
 	// Production режим работы в продакшн среде, в лог идет только ошибки
-	Production EnvType = 0
+	Production EnvType = iota
 
 	// Stage режим работы в stage среде, в лог идет информационные логи, помимо ошибок
-	Stage EnvType = 1
+	Stage
 
 	// Development режим работы для разработки, в лог идут дебаг-логи, добавляются обработчики для профилировщика pprof
-	Development EnvType = 2
+	Development
 )

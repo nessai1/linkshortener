@@ -10,6 +10,7 @@ type MemoryLinkStorage struct {
 	hl HashToLink
 }
 
+// Set сохраняет ссылку в карте map[string]Link по ключу hash
 func (storage *MemoryLinkStorage) Set(_ context.Context, hash string, link Link) error {
 	_, ok := storage.hl[hash]
 	if !ok {
@@ -20,11 +21,13 @@ func (storage *MemoryLinkStorage) Set(_ context.Context, hash string, link Link)
 	return ErrURLIntersection
 }
 
+// Get получает ссылку из карты map[string]Link по ключу hash
 func (storage *MemoryLinkStorage) Get(_ context.Context, hash string) (Link, bool) {
 	val, ok := storage.hl[hash]
 	return val, ok
 }
 
+// FindByUserUUID ищет среди ссылок в карте map[string]Link ссылки с OwnerUUID === userUUID
 func (storage *MemoryLinkStorage) FindByUserUUID(_ context.Context, userUUID string) []KeyValueRow {
 	rows := make([]KeyValueRow, 0)
 
@@ -44,10 +47,12 @@ func (storage *MemoryLinkStorage) FindByUserUUID(_ context.Context, userUUID str
 	return rows
 }
 
+// Ping проверка доступности карты map[string]Link. Всегда true
 func (storage *MemoryLinkStorage) Ping() (bool, error) {
 	return true, nil
 }
 
+// LoadBatch загружает ссылки указанные в items в карту map[string]Link
 func (storage *MemoryLinkStorage) LoadBatch(_ context.Context, items []KeyValueRow) error {
 	for _, item := range items {
 		link := Link{
@@ -65,6 +70,7 @@ func (storage *MemoryLinkStorage) LoadBatch(_ context.Context, items []KeyValueR
 	return nil
 }
 
+// DeleteBatch удаляет из карты map[string]Link пачку ссылок, совпадающих по Hash.Value && Hash.OwnerUUID
 func (storage *MemoryLinkStorage) DeleteBatch(_ context.Context, items []Hash) error {
 	for _, item := range items {
 		val := storage.hl[item.Value]
@@ -77,6 +83,7 @@ func (storage *MemoryLinkStorage) DeleteBatch(_ context.Context, items []Hash) e
 	return nil
 }
 
+// BeforeShutdown не делает никаких операций перед закрытием приложения
 func (storage *MemoryLinkStorage) BeforeShutdown() error {
 	return nil
 }
