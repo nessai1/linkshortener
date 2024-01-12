@@ -240,3 +240,53 @@ func TestApplication_apiHandleAddBatchURL(t *testing.T) {
 		})
 	}
 }
+
+func TestApplication_apiHandleDeleteURLs(t *testing.T) {
+	ownerUUID := "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+	testApp := createTestApp(":8080", "http://test", nil)
+
+	tests := []struct {
+		name           string
+		input          InputDataJSON
+		expectedStatus int
+	}{
+		{
+			name:           "Successful delete #1",
+			input:          InputDataJSON{body: `["abvg"]`, userUUID: ownerUUID},
+			expectedStatus: http.StatusAccepted,
+		},
+		{
+			name:           "Invalid body #1",
+			input:          InputDataJSON{body: `["abvg" "de"]`, userUUID: ownerUUID},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "Invalid body #2",
+			input:          InputDataJSON{body: `hello world`, userUUID: ownerUUID},
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "Unauthorized",
+			input:          InputDataJSON{body: `["hello", "world"]`, userUUID: ""},
+			expectedStatus: http.StatusForbidden,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodDelete, "/user/urls", strings.NewReader(tt.input.body))
+
+			if tt.input.userUUID != "" {
+				ctx := request.Context()
+				request = request.WithContext(context.WithValue(ctx, app.ContextUserUUIDKey, app.UserUUID(tt.input.userUUID)))
+			}
+
+			writer := httptest.NewRecorder()
+
+			testApp.apiHandleDeleteURLs(writer, request)
+
+			assert.Equal(t, tt.expectedStatus, writer.Result().StatusCode)
+		})
+	}
+}
