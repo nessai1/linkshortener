@@ -290,3 +290,112 @@ func TestApplication_apiHandleDeleteURLs(t *testing.T) {
 		})
 	}
 }
+
+func TestApplication_apiHandleGetUserURLs(t *testing.T) {
+
+	firstUserUUID := "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+	secondUserUUID := "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxy"
+	tokenTail := "https://test.com"
+
+	hl := linkstorage.HashToLink{
+		"u1h1": {
+			Value:     "https://u1l1.com",
+			OwnerUUID: firstUserUUID,
+			IsDeleted: false,
+		},
+		"u1h2": {
+			Value:     "https://u1l2.com",
+			OwnerUUID: firstUserUUID,
+			IsDeleted: false,
+		},
+		"u1h3": {
+			Value:     "https://u1l3.com",
+			OwnerUUID: firstUserUUID,
+			IsDeleted: true,
+		},
+
+		"u2h1": {
+			Value:     "https://u2l1.com",
+			OwnerUUID: secondUserUUID,
+			IsDeleted: false,
+		},
+	}
+
+	testApp := createTestApp(":8080", tokenTail, hl)
+
+	tests := []struct {
+		name           string
+		expectedStatus int
+		userUUID       string
+		expectedURLs   []getUserURLsResult
+	}{
+		{
+			name:           "Successful user #1",
+			userUUID:       firstUserUUID,
+			expectedStatus: http.StatusOK,
+			expectedURLs: []getUserURLsResult{
+				{
+					OriginalURL: "https://u1l1.com",
+					ShortURL:    tokenTail + "/u1h1",
+				},
+				{
+					OriginalURL: "https://u1l2.com",
+					ShortURL:    tokenTail + "/u1h2",
+				},
+				{
+					OriginalURL: "https://u1l3.com",
+					ShortURL:    tokenTail + "/u1h3",
+				},
+			},
+		},
+		{
+			name:           "Successful user #2",
+			userUUID:       secondUserUUID,
+			expectedStatus: http.StatusOK,
+			expectedURLs: []getUserURLsResult{
+				{
+					OriginalURL: "https://u2l1.com",
+					ShortURL:    tokenTail + "/u2h1",
+				},
+			},
+		},
+		{
+			name:           "Unauthorized user",
+			userUUID:       "",
+			expectedStatus: http.StatusForbidden,
+			expectedURLs:   nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodGet, "/user/urls", nil)
+
+			if tt.userUUID != "" {
+				ctx := request.Context()
+				request = request.WithContext(context.WithValue(ctx, app.ContextUserUUIDKey, app.UserUUID(tt.userUUID)))
+			}
+
+			writer := httptest.NewRecorder()
+
+			testApp.apiHandleGetUserURLs(writer, request)
+			result := writer.Result()
+			defer result.Body.Close()
+
+			require.Equal(t, tt.expectedStatus, result.StatusCode)
+			if tt.expectedURLs != nil {
+				var b bytes.Buffer
+				n, err := b.ReadFrom(result.Body)
+				require.NoError(t, err)
+				require.NotEqual(t, n, 0)
+
+				var responseLinks []getUserURLsResult
+
+				err = json.Unmarshal(b.Bytes(), &responseLinks)
+				require.NoError(t, err)
+
+				assert.Equal(t, tt.expectedURLs, responseLinks)
+			}
+		})
+	}
+}
