@@ -55,3 +55,57 @@ func TestIsNeedToCreateSign(t *testing.T) {
 
 	assert.False(t, isNeedToCreateSign(request))
 }
+
+func TestAuthorize(t *testing.T) {
+	tests := []struct {
+		name string
+		sign string
+		uuid string
+	}{
+		{
+			name: "Valid UUID",
+			uuid: generateUserUUID(),
+		},
+		{
+			name: "Invalid sign",
+			sign: "someinvalidsign",
+		},
+		{
+			name: "No auth data",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodGet, "https://test.com", nil)
+			w := httptest.NewRecorder()
+
+			var cookie *http.Cookie
+			if tt.sign != "" {
+				cookie = &http.Cookie{
+					Name:  LoginCookieName,
+					Value: tt.sign,
+				}
+			} else if tt.uuid != "" {
+				validSign, err := generateSign(tt.uuid)
+				require.NoError(t, err)
+				cookie = &http.Cookie{
+					Name:  LoginCookieName,
+					Value: validSign,
+				}
+			}
+
+			if cookie != nil {
+				r.AddCookie(cookie)
+			}
+
+			uuid, err := authorize(w, r)
+			require.NoError(t, err)
+			if tt.uuid != "" && tt.sign == "" {
+				assert.Equal(t, tt.uuid, string(uuid))
+			} else {
+				assert.NotEmpty(t, string(uuid))
+			}
+		})
+	}
+}
