@@ -393,8 +393,18 @@ func TestApplication_apiHandleGetUserURLs(t *testing.T) {
 
 				err = json.Unmarshal(b.Bytes(), &responseLinks)
 				require.NoError(t, err)
+				assert.Equal(t, len(tt.expectedURLs), len(responseLinks))
+				for _, url := range tt.expectedURLs {
+					finded := false
+					for _, responseURL := range responseLinks {
+						if url.OriginalURL == responseURL.OriginalURL {
+							finded = true
+							assert.Equal(t, url.ShortURL, responseURL.ShortURL)
+						}
+					}
 
-				assert.Equal(t, tt.expectedURLs, responseLinks)
+					assert.True(t, finded, "User URL expected in list but not found")
+				}
 			}
 		})
 	}
