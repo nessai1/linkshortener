@@ -26,6 +26,10 @@ func fetchContentAfterTokenTail(link string) (string, error) {
 
 func createTestApp(serverAddr, tokenTail string, hl linkstorage.HashToLink) *Application {
 	storage := linkstorage.NewMemoryStorage(hl)
+	return createTestAppWithStorage(serverAddr, tokenTail, storage)
+}
+
+func createTestAppWithStorage(serverAddr, tokenTail string, storage linkstorage.LinkStorage) *Application {
 	cfg := Config{
 		ServerAddr:  serverAddr,
 		TokenTail:   tokenTail,
