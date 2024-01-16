@@ -4,10 +4,10 @@ import (
 	"github.com/speps/go-hashids"
 )
 
-const (
-	HashMinLength = 5
-)
+// HashMinLength минимальная длина хеша от ссылки
+const HashMinLength = 5
 
+// EncodeURL получает из переданной ссылки хеш длинной >= HashMinLength
 func EncodeURL(url string) (string, error) {
 	hd := hashids.NewData()
 	hd.Salt = url

@@ -4,41 +4,50 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
 	"net/http"
 	"time"
+
+	"go.uber.org/zap"
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 )
 
+// LoginCookieName название куки в которой хранится подписанный пользовательский UUID
 const LoginCookieName = "LINKSHORTER_USER"
-const SignSecret = "unkTpTVMUcHQmgWXADBpcueGlcBAVXHAD2zUAuQCzD0MOKYhcg6Cvjrarl9RMmDUXRZuQz36S8Hs0Ak3OgkQy8vweiYtF2NaVV3qZLDvKYd75zaU1InkwRUEHUj01gkbSItyLh5V2eLO7lHAmpTYQ7N0CjOElRKeTIe23HEC4rAfDAavOLKATqrMKJnCzQvLNSaMPhzXpo9MzbHHfbPImn6tmVQiK9h63tKSQx3Dz0Mj2A8NHef3cvCEHC"
-const TokenTTL = time.Hour * 1
+
+// ContextUserUUIDKey ключ контекста запроса в которой хранится пользовательский UUID
 const ContextUserUUIDKey ContextAuthKey = "UserUUIDKey"
 
+const (
+	signSecret = "unkTpTVMUcHQmgWXADBpcueGlcBAVXHAD2zUAuQCzD0MOKYhcg6Cvjrarl9RMmDUXRZuQz36S8Hs0Ak3OgkQy8vweiYtF2NaVV3qZLDvKYd75zaU1InkwRUEHUj01gkbSItyLh5V2eLO7lHAmpTYQ7N0CjOElRKeTIe23HEC4rAfDAavOLKATqrMKJnCzQvLNSaMPhzXpo9MzbHHfbPImn6tmVQiK9h63tKSQx3Dz0Mj2A8NHef3cvCEHC"
+	tokenTTL   = time.Hour * 1
+)
+
+// ContextAuthKey тип данных для хранения пользователького идентификатора в контексте
 type ContextAuthKey string
-type ContextKeyUserUUIDKey string
+
+// UserUUID тип данных пользовательского идентификатора
 type UserUUID string
 
-type Claims struct {
+type claims struct {
 	jwt.RegisteredClaims
 	UserUUID string
 }
 
-func GenerateUserUUID() string {
+func generateUserUUID() string {
 	return uuid.New().String()
 }
 
-func GenerateSign(UUID string) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
+func generateSign(UUID string) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenTTL)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenTTL)),
 		},
 		UserUUID: UUID,
 	})
 
-	tokenString, err := token.SignedString([]byte(SignSecret))
+	tokenString, err := token.SignedString([]byte(signSecret))
 	if err != nil {
 		return "", err
 	}
@@ -46,10 +55,11 @@ func GenerateSign(UUID string) (string, error) {
 	return tokenString, nil
 }
 
+// FetchUUID get user UUID from signed string, or get error if sign is wrong
 func FetchUUID(sign string) (UserUUID, error) {
-	claims := &Claims{}
+	claims := &claims{}
 	_, err := jwt.ParseWithClaims(sign, claims, func(t *jwt.Token) (interface{}, error) {
-		return []byte(SignSecret), nil
+		return []byte(signSecret), nil
 	})
 
 	if err != nil {
@@ -67,8 +77,8 @@ func authorize(writer http.ResponseWriter, request *http.Request) (UserUUID, err
 	}
 
 	if needToCreateSign {
-		userUUID := GenerateUserUUID()
-		sign, err := GenerateSign(userUUID)
+		userUUID := generateUserUUID()
+		sign, err := generateSign(userUUID)
 		if err != nil {
 			return "", fmt.Errorf("cannot generate signed user UUID: %s", err.Error())
 		} else {
@@ -104,6 +114,7 @@ func isNeedToCreateSign(request *http.Request) (bool, error) {
 	return true, nil
 }
 
+// GetAuthMiddleware является middleware который добавляет поддержку авторизации UUID пользователя, делающего запрос на сервис
 func GetAuthMiddleware(logger *zap.Logger) func(handler http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -136,6 +147,7 @@ func GetAuthMiddleware(logger *zap.Logger) func(handler http.Handler) http.Handl
 	}
 }
 
+// GetAuthMiddleware является middleware который добавляет поддержку регистрации нового UUID пользователя, делающего запрос на сервис
 func GetRegisterMiddleware(logger *zap.Logger) func(handler http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {

@@ -55,3 +55,10 @@ func TestEncodeURL(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkEncodeURL(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_, err := EncodeURL("https://some-very--very--very--very--very--very--very--very--very--very--very-big-url.com")
+		require.NoError(b, err)
+	}
+}
