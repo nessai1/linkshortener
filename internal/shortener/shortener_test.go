@@ -117,3 +117,23 @@ func TestApplication_validateURL(t *testing.T) {
 		})
 	}
 }
+
+func TestApplication_GetControllers(t *testing.T) {
+	testApp := createTestApp(":8080", "https://test.com", nil)
+
+	cs := testApp.GetControllers()
+	for _, csItem := range cs {
+		assert.NotNil(t, csItem.Mux)
+		assert.NotEqual(t, "", csItem.Path)
+	}
+}
+
+func TestApplication_SetLogger(t *testing.T) {
+	testApp := createTestApp(":8080", "https://test.com", nil)
+
+	testLogger := zap.Logger{}
+	assert.NotEqual(t, testApp.logger, &testLogger)
+
+	testApp.SetLogger(&testLogger)
+	assert.Equal(t, testApp.logger, &testLogger)
+}

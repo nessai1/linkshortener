@@ -71,10 +71,7 @@ func FetchUUID(sign string) (UserUUID, error) {
 
 // authorize user if uuid expired or does not exist
 func authorize(writer http.ResponseWriter, request *http.Request) (UserUUID, error) {
-	needToCreateSign, err := isNeedToCreateSign(request)
-	if err != nil {
-		return "", fmt.Errorf("error while check sign: %s", err.Error())
-	}
+	needToCreateSign := isNeedToCreateSign(request)
 
 	if needToCreateSign {
 		userUUID := generateUserUUID()
@@ -98,20 +95,18 @@ func authorize(writer http.ResponseWriter, request *http.Request) (UserUUID, err
 	}
 }
 
-func isNeedToCreateSign(request *http.Request) (bool, error) {
+func isNeedToCreateSign(request *http.Request) bool {
 	cookie, err := request.Cookie(LoginCookieName)
-	if err != nil && errors.Is(err, http.ErrNoCookie) {
-		return true, nil
-	} else if err != nil {
-		return false, err
+	if err != nil {
+		return true
 	}
 
 	_, err = FetchUUID(cookie.Value)
 	if err == nil {
-		return false, nil
+		return false
 	}
 
-	return true, nil
+	return true
 }
 
 // GetAuthMiddleware является middleware который добавляет поддержку авторизации UUID пользователя, делающего запрос на сервис
