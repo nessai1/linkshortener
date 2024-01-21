@@ -5,6 +5,7 @@ import (
 	"github.com/nessai1/linkshortener/internal/app"
 	"go.uber.org/zap"
 	"net/http"
+	"time"
 )
 
 type MyBeautifulApp struct {
@@ -52,5 +53,9 @@ func ExampleRun() {
 	myApp := MyBeautifulApp{}
 
 	// Запускаем приложение в режиме работы для разработки
-	app.Run(&myApp, app.Development)
+	app.Run(&myApp, app.Development, app.ApplicationInfo{
+		BuildVersion: "test version",
+		BuildDate:    time.Now().String(),
+		BuildCommit:  "N/A",
+	})
 }
