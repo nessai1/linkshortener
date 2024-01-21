@@ -7,9 +7,9 @@ import (
 
 func myBeautifulFunc(s int) {
 	if s > 42 {
-		os.Exit(1) // want "Must not contain os.Exit expression"
+		os.Exit(1)
 	} else if s < 0 {
-		os.Exit(0) // want "Must not contain os.Exit expression"
+		os.Exit(0)
 	}
 
 	Exit()
@@ -20,7 +20,7 @@ func myBeautifulFunc(s int) {
 func SomeFunc() func() {
 	wtf := func() {
 		fmt.Println("wtf???? Goodbye!")
-		os.Exit(3) // want "Must not contain os.Exit expression"
+		os.Exit(3)
 	}
 
 	return wtf

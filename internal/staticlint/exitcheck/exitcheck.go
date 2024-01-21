@@ -2,6 +2,7 @@ package exitcheck
 
 import (
 	"go/ast"
+	"go/token"
 	"golang.org/x/tools/go/analysis"
 )
 
@@ -14,11 +15,19 @@ var ExitCheckAnalyzer = &analysis.Analyzer{
 
 func run(pass *analysis.Pass) (interface{}, error) {
 	for _, file := range pass.Files {
+		if file.Name.Name != "main" {
+			continue
+		}
+
 		ast.Inspect(file, func(node ast.Node) bool {
 			switch x := node.(type) {
-			case *ast.CallExpr:
-				if isExitExpression(x) {
-					pass.Reportf(x.Pos(), "Must not contain os.Exit expression")
+			case *ast.FuncDecl:
+				if x.Name.Name == "main" {
+					if isContainExit, poses := isFuncNodeContainExit(node); isContainExit {
+						for _, pos := range poses {
+							pass.Reportf(pos, "Must not contain os.Exit expression")
+						}
+					}
 				}
 			}
 
@@ -27,6 +36,22 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	}
 
 	return nil, nil
+}
+
+func isFuncNodeContainExit(node ast.Node) (bool, []token.Pos) {
+	exitExpressionPos := make([]token.Pos, 0)
+
+	ast.Inspect(node, func(node ast.Node) bool {
+		if x, ok := node.(*ast.CallExpr); ok {
+			if isExitExpression(x) {
+				exitExpressionPos = append(exitExpressionPos, x.Pos())
+			}
+		}
+
+		return true
+	})
+
+	return len(exitExpressionPos) > 0, exitExpressionPos
 }
 
 func isExitExpression(c *ast.CallExpr) bool {
