@@ -200,6 +200,8 @@ func TestApplication_handleCheckStorageStatus(t *testing.T) {
 			testApp.handleCheckStorageStatus(writer, request)
 
 			result := writer.Result()
+			defer result.Body.Close()
+
 			assert.Equal(t, tt.expectedStatus, result.StatusCode)
 		})
 	}

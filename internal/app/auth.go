@@ -102,11 +102,8 @@ func isNeedToCreateSign(request *http.Request) bool {
 	}
 
 	_, err = FetchUUID(cookie.Value)
-	if err == nil {
-		return false
-	}
 
-	return true
+	return err != nil
 }
 
 // GetAuthMiddleware является middleware который добавляет поддержку авторизации UUID пользователя, делающего запрос на сервис

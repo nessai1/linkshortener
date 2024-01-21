@@ -285,6 +285,8 @@ func TestApplication_apiHandleDeleteURLs(t *testing.T) {
 			writer := httptest.NewRecorder()
 
 			testApp.apiHandleDeleteURLs(writer, request)
+			result := writer.Result()
+			defer result.Body.Close()
 
 			assert.Equal(t, tt.expectedStatus, writer.Result().StatusCode)
 		})
