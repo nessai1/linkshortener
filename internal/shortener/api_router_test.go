@@ -288,7 +288,7 @@ func TestApplication_apiHandleDeleteURLs(t *testing.T) {
 			result := writer.Result()
 			defer result.Body.Close()
 
-			assert.Equal(t, tt.expectedStatus, writer.Result().StatusCode)
+			assert.Equal(t, tt.expectedStatus, result.StatusCode)
 		})
 	}
 }
