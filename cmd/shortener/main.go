@@ -5,9 +5,9 @@ import (
 	"github.com/nessai1/linkshortener/internal/shortener"
 )
 
-var buildVersion string
-var buildDate string
-var buildCommit string
+var buildVersion = "N/A"
+var buildDate = "N/A"
+var buildCommit = "N/A"
 
 func main() {
 
@@ -25,18 +25,6 @@ func getApplicationInfo() app.ApplicationInfo {
 		BuildVersion: buildVersion,
 		BuildDate:    buildDate,
 		BuildCommit:  buildCommit,
-	}
-
-	if info.BuildVersion == "" {
-		info.BuildVersion = "N/A"
-	}
-
-	if info.BuildDate == "" {
-		info.BuildDate = "N/A"
-	}
-
-	if info.BuildCommit == "" {
-		info.BuildCommit = "N/A"
 	}
 
 	return info
