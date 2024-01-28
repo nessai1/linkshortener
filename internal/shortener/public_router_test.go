@@ -2,6 +2,7 @@ package shortener
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +15,20 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+type testStorage struct {
+	linkstorage.MemoryLinkStorage
+
+	isActive bool
+}
+
+func (storage *testStorage) Ping() (bool, error) {
+	if storage.isActive {
+		return true, nil
+	}
+
+	return false, fmt.Errorf("driver is not active")
+}
 
 func TestApplication_handleAddURL(t *testing.T) {
 	type request struct {
@@ -153,6 +168,41 @@ func TestApplication_handleGetURL(t *testing.T) {
 			assert.Equalf(t, tt.wantedRequest.location, res.Header.Get("Location"),
 				"Invalid location header %s (%s expected)", res.Header.Get("Location"), tt.wantedRequest.location,
 			)
+		})
+	}
+}
+
+func TestApplication_handleCheckStorageStatus(t *testing.T) {
+	tests := []struct {
+		name           string
+		isActive       bool
+		expectedStatus int
+	}{
+		{
+			name:           "Available storage",
+			isActive:       true,
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "Not available storage",
+			isActive:       false,
+			expectedStatus: http.StatusInternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storage := testStorage{isActive: tt.isActive}
+			testApp := createTestAppWithStorage(":8080", "https://test.com", &storage)
+
+			request := httptest.NewRequest(http.MethodGet, "/ping", nil)
+			writer := httptest.NewRecorder()
+			testApp.handleCheckStorageStatus(writer, request)
+
+			result := writer.Result()
+			defer result.Body.Close()
+
+			assert.Equal(t, tt.expectedStatus, result.StatusCode)
 		})
 	}
 }

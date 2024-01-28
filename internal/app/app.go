@@ -12,8 +12,20 @@ import (
 	"go.uber.org/zap"
 )
 
+// ApplicationInfo информация о приложении, указываямая при сборке линтером
+type ApplicationInfo struct {
+	// BuildVersion Версия билда приложения
+	BuildVersion string
+	// BuildDate Дата билда приложения
+	BuildDate string
+	// BuildCommit последний коммит билда приложения
+	BuildCommit string
+}
+
 // Run запускает реализацию Application с режимом работы EnvType
-func Run(application Application, envType EnvType) {
+func Run(application Application, envType EnvType, info ApplicationInfo) {
+	fmt.Printf("Build version: %s\nBuild date: %s\nBuild commit: %s\n", info.BuildVersion, info.BuildDate, info.BuildCommit)
+
 	router := chi.NewRouter()
 
 	logger, err := CreateAppLogger(envType)
