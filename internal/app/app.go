@@ -2,6 +2,8 @@ package app
 
 import (
 	"fmt"
+	"golang.org/x/crypto/acme/autocert"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -23,7 +25,7 @@ type ApplicationInfo struct {
 }
 
 // Run запускает реализацию Application с режимом работы EnvType
-func Run(application Application, envType EnvType, info ApplicationInfo) {
+func Run(application Application, envType EnvType, info ApplicationInfo, useSecure bool) {
 	fmt.Printf("Build version: %s\nBuild date: %s\nBuild commit: %s\n", info.BuildVersion, info.BuildDate, info.BuildCommit)
 
 	router := chi.NewRouter()
@@ -57,10 +59,38 @@ func Run(application Application, envType EnvType, info ApplicationInfo) {
 		os.Exit(0)
 	}()
 
-	if err := http.ListenAndServe(application.GetAddr(), router); err != nil {
-		panic(err)
+	if useSecure {
+		server := buildSecureServer(application.GetAddr(), router)
+		err = server.ListenAndServeTLS("", "")
+	} else {
+		err = http.ListenAndServe(application.GetAddr(), router)
 	}
+
+	if err != nil {
+		log.Fatalf("Error while start listening server: %s", err.Error())
+	}
+
 	defer application.OnBeforeClose()
+}
+
+func buildSecureServer(addr string, mux http.Handler) *http.Server {
+	// конструируем менеджер TLS-сертификатов
+	manager := &autocert.Manager{
+		// директория для хранения сертификатов
+		Cache: autocert.DirCache("cache-dir"),
+		// функция, принимающая Terms of Service издателя сертификатов
+		Prompt: autocert.AcceptTOS,
+		// перечень доменов, для которых будут поддерживаться сертификаты
+		HostPolicy: autocert.HostWhitelist(addr),
+	}
+
+	// конструируем сервер с поддержкой TLS
+	return &http.Server{
+		Addr:    addr,
+		Handler: mux,
+		// для TLS-конфигурации используем менеджер сертификатов
+		TLSConfig: manager.TLSConfig(),
+	}
 }
 
 // Application интерфейс описывающий методы, на которые уделяется ответсвенность при работе фасада веб-приложения.

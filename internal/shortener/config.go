@@ -30,6 +30,7 @@ func BuildAppConfig() (*Config, error) {
 		ServerAddr:  config.ServerAddr,
 		TokenTail:   config.TokenTail,
 		LinkStorage: linkStorage,
+		EnableHTTPS: config.EnableHTTPS,
 	}
 
 	return &shortenerConfig, nil
@@ -45,6 +46,8 @@ type InitConfig struct {
 	SQLConnection string
 	// FileStoragePath путь файла в который будет записывать файловый репозиторий ссылок
 	FileStoragePath string
+	// EnableHTTPS говорит серверу использовать https соединение
+	EnableHTTPS bool
 }
 
 func fetchConfig() InitConfig {
@@ -52,6 +55,7 @@ func fetchConfig() InitConfig {
 	tokenTail := flag.String("b", "", "Left tail of token of shorted URL")
 	storageFilePath := flag.String("f", "./tmp/short-url-db.json", "Path to file storage")
 	postgresConnParams := flag.String("d", "", "Connection params for postgres")
+	enableHTTPS := flag.Bool("s", false, "Use HTTP secure connection")
 
 	flag.Parse()
 
@@ -71,11 +75,16 @@ func fetchConfig() InitConfig {
 		*postgresConnParams = postgresConnParamsEnv
 	}
 
+	if enableHTTPSEnv := os.Getenv("ENABLE_HTTPS"); enableHTTPSEnv != "" {
+		*enableHTTPS = true
+	}
+
 	return InitConfig{
 		ServerAddr:      *serverAddr,
 		TokenTail:       *tokenTail,
 		SQLConnection:   *postgresConnParams,
 		FileStoragePath: *storageFilePath,
+		EnableHTTPS:     *enableHTTPS,
 	}
 }
 
