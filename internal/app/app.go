@@ -1,17 +1,16 @@
 package app
 
 import (
+	"context"
+	"errors"
 	"fmt"
-	"golang.org/x/crypto/acme/autocert"
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"go.uber.org/zap"
+	"golang.org/x/crypto/acme/autocert"
+	"net/http"
+	"os"
+	"os/signal"
 )
 
 // ApplicationInfo информация о приложении, указываямая при сборке линтером
@@ -51,29 +50,41 @@ func Run(application Application, envType EnvType, info ApplicationInfo, useSecu
 
 	logger.Info("Starting server", zap.String("Server addr", application.GetAddr()))
 
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-c
-		application.OnBeforeClose()
-		os.Exit(0)
-	}()
+	var server http.Server
 
 	if useSecure {
-		server := buildSecureServer(application.GetAddr(), router)
+		server = buildSecureServer(application.GetAddr(), router)
 		err = server.ListenAndServeTLS("", "")
 	} else {
-		err = http.ListenAndServe(application.GetAddr(), router)
+		server = http.Server{
+			Addr:    application.GetAddr(),
+			Handler: router,
+		}
+		err = server.ListenAndServe()
 	}
 
-	if err != nil {
-		log.Fatalf("Error while start listening server: %s", err.Error())
+	idleConnsClosed := make(chan struct{})
+	sigint := make(chan os.Signal, 1)
+	signal.Notify(sigint, os.Interrupt)
+	go func() {
+		<-sigint
+		if err := server.Shutdown(context.Background()); err != nil {
+			logger.Error("Error HTTP server shutdown listener", zap.Error(err))
+		}
+		close(idleConnsClosed)
+	}()
+
+	if !errors.Is(err, http.ErrServerClosed) {
+		logger.Error("Error while start listening server", zap.Error(err))
+		return
 	}
 
-	defer application.OnBeforeClose()
+	<-idleConnsClosed
+	application.OnBeforeClose()
+	logger.Info("Server graceful shutdown")
 }
 
-func buildSecureServer(addr string, mux http.Handler) *http.Server {
+func buildSecureServer(addr string, mux http.Handler) http.Server {
 	// конструируем менеджер TLS-сертификатов
 	manager := &autocert.Manager{
 		// директория для хранения сертификатов
@@ -85,7 +96,7 @@ func buildSecureServer(addr string, mux http.Handler) *http.Server {
 	}
 
 	// конструируем сервер с поддержкой TLS
-	return &http.Server{
+	return http.Server{
 		Addr:    addr,
 		Handler: mux,
 		// для TLS-конфигурации используем менеджер сертификатов
