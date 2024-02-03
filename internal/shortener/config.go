@@ -112,7 +112,7 @@ func fetchConfig() (InitConfig, error) {
 			*storageFilePath = jsonConfig.FileStoragePath
 		}
 
-		if *enableHTTPS == false {
+		if !*enableHTTPS {
 			*enableHTTPS = jsonConfig.EnableHTTPS
 		}
 	}
