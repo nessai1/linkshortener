@@ -51,16 +51,21 @@ func Run(application Application, envType EnvType, info ApplicationInfo, useSecu
 	logger.Info("Starting server", zap.String("Server addr", application.GetAddr()))
 
 	var server http.Server
+	var start func(server *http.Server) error
 
 	if useSecure {
 		server = buildSecureServer(application.GetAddr(), router)
-		err = server.ListenAndServeTLS("", "")
+		start = func(server *http.Server) error {
+			return server.ListenAndServeTLS("", "")
+		}
 	} else {
 		server = http.Server{
 			Addr:    application.GetAddr(),
 			Handler: router,
 		}
-		err = server.ListenAndServe()
+		start = func(server *http.Server) error {
+			return server.ListenAndServe()
+		}
 	}
 
 	idleConnsClosed := make(chan struct{})
@@ -74,7 +79,7 @@ func Run(application Application, envType EnvType, info ApplicationInfo, useSecu
 		close(idleConnsClosed)
 	}()
 
-	if !errors.Is(err, http.ErrServerClosed) {
+	if err := start(&server); !errors.Is(err, http.ErrServerClosed) {
 		logger.Error("Error while start listening server", zap.Error(err))
 		return
 	}
