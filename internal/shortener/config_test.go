@@ -12,6 +12,7 @@ func TestInitJSONConfig(t *testing.T) {
 	assert.Error(t, err)
 
 	tempFile, err := os.CreateTemp("", "tempconfig")
+	require.NoError(t, err)
 	configPath := tempFile.Name()
 
 	tempFile.Write([]byte(`{
