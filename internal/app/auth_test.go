@@ -3,6 +3,7 @@ package app
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -106,6 +107,129 @@ func TestAuthorize(t *testing.T) {
 			} else {
 				assert.NotEmpty(t, string(uuid))
 			}
+		})
+	}
+}
+
+func TestGetAuthMiddleware(t *testing.T) {
+	userUUID := generateUserUUID()
+	validSign, _ := generateSign(userUUID)
+	tests := []struct {
+		name string
+
+		cookie       *http.Cookie
+		userUUID     string
+		isAuthorized bool
+	}{
+		{
+			name: "No cookie",
+
+			cookie:       nil,
+			isAuthorized: false,
+		},
+		{
+			name: "Valid cookie",
+
+			cookie: &http.Cookie{
+				Name:  LoginCookieName,
+				Value: validSign,
+			},
+			userUUID:     userUUID,
+			isAuthorized: true,
+		},
+		{
+			name: "Invalid cookie",
+
+			cookie: &http.Cookie{
+				Name:  LoginCookieName,
+				Value: "someshitsign",
+			},
+			isAuthorized: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nextHandler := http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+				require.True(t, tt.isAuthorized)
+				userUUIDCtxValue := request.Context().Value(ContextUserUUIDKey)
+				assert.Equal(t, UserUUID(tt.userUUID), userUUIDCtxValue)
+				writer.WriteHeader(http.StatusOK)
+			})
+
+			handlerToTest := GetAuthMiddleware(zap.NewNop())(nextHandler)
+
+			req := httptest.NewRequest(http.MethodGet, "/some/authorized/page", nil)
+			if tt.cookie != nil {
+				req.AddCookie(tt.cookie)
+			}
+			recorder := httptest.NewRecorder()
+			handlerToTest.ServeHTTP(recorder, req)
+
+			if tt.isAuthorized {
+				assert.Equal(t, http.StatusOK, recorder.Code)
+			} else {
+				assert.Equal(t, http.StatusUnauthorized, recorder.Code)
+			}
+		})
+	}
+}
+
+func TestGetRegisterMiddleware(t *testing.T) {
+
+	userUUID := generateUserUUID()
+	sign, _ := generateSign(userUUID)
+
+	tests := []struct {
+		name string
+
+		cookie   *http.Cookie
+		userUUID string
+	}{
+		{
+			name: "User have UUID",
+
+			cookie: &http.Cookie{
+				Name:  LoginCookieName,
+				Value: sign,
+			},
+			userUUID: userUUID,
+		},
+		{
+			name: "Invalid sign",
+			cookie: &http.Cookie{
+				Name:  LoginCookieName,
+				Value: "someshitsign",
+			},
+		},
+		{
+			name: "No cookie",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nextHandler := http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+				userUUIDCtxValue := request.Context().Value(ContextUserUUIDKey)
+				if tt.userUUID != "" {
+					assert.Equal(t, UserUUID(tt.userUUID), userUUIDCtxValue)
+				} else {
+					assert.NotEmpty(t, userUUIDCtxValue)
+				}
+
+				writer.WriteHeader(http.StatusOK)
+			})
+
+			handlerToTest := GetRegisterMiddleware(zap.NewNop())(nextHandler)
+
+			req := httptest.NewRequest(http.MethodGet, "/some/authorized/page", nil)
+			if tt.cookie != nil {
+				req.AddCookie(tt.cookie)
+			}
+			recorder := httptest.NewRecorder()
+			handlerToTest.ServeHTTP(recorder, req)
+
+			require.Equal(t, http.StatusOK, recorder.Code)
 		})
 	}
 }
