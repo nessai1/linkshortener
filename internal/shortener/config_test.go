@@ -40,3 +40,9 @@ func TestInitJSONConfig(t *testing.T) {
 	_, err = initJSONConfig(configPath)
 	assert.Error(t, err)
 }
+
+func TestBuildAppConfig(t *testing.T) {
+	_, err := BuildAppConfig()
+	require.NoError(t, err)
+	// разобразться с переопределением флагов и добавить тестов к 9му инкременту
+}
