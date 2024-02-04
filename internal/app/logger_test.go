@@ -1,7 +1,6 @@
 package app
 
 import (
-	"crypto/md5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zapcore"
@@ -11,7 +10,6 @@ import (
 	"regexp"
 	"strconv"
 	"testing"
-	"time"
 )
 
 func TestCreateAppLogger(t *testing.T) {
@@ -101,11 +99,8 @@ func TestGetRequestLogMiddleware(t *testing.T) {
 	testPrefix := "TEST_PREFIX"
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			testNameHash := md5.Sum([]byte("TestGetRequestLogMiddleware" + time.Now().Format(time.RFC850)))
-
-			pathname, err := os.MkdirTemp("", string(testNameHash[:]))
-			require.NoError(t, err)
-			tempFile, err := os.CreateTemp(pathname, "case_"+strconv.Itoa(i))
+			pathname := t.TempDir()
+			tempFile, err := os.Create(pathname + "/case_" + strconv.Itoa(i))
 			tempFileName := tempFile.Name()
 			require.NoError(t, err)
 
