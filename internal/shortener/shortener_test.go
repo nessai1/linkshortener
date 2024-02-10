@@ -128,6 +128,25 @@ func TestApplication_GetControllers(t *testing.T) {
 	}
 }
 
+type obcTestStorage struct {
+	linkstorage.MemoryLinkStorage
+
+	isShutdownCalled bool
+}
+
+func (s *obcTestStorage) BeforeShutdown() error {
+	s.isShutdownCalled = true
+	return nil
+}
+
+func TestApplication_OnBeforeClose(t *testing.T) {
+	storage := obcTestStorage{}
+	testApp := createTestAppWithStorage(":8080", "https://test.com", &storage)
+	assert.False(t, storage.isShutdownCalled)
+	testApp.OnBeforeClose()
+	assert.True(t, storage.isShutdownCalled)
+}
+
 func TestApplication_SetLogger(t *testing.T) {
 	testApp := createTestApp(":8080", "https://test.com", nil)
 

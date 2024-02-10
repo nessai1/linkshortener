@@ -17,7 +17,7 @@ func main() {
 		panic(err)
 	}
 
-	app.Run(shortener.GetApplication(shortenerConfig), app.Development, getApplicationInfo())
+	app.Run(shortener.GetApplication(shortenerConfig), app.Development, getApplicationInfo(), shortenerConfig.EnableHTTPS)
 }
 
 func getApplicationInfo() app.ApplicationInfo {

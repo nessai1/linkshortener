@@ -21,6 +21,8 @@ type Config struct {
 	TokenTail string
 	// LinkStorage репозиторий сокращенных ссылок
 	LinkStorage linkstorage.LinkStorage
+	// EnableHTTPS указывает, будет ли использовать сервер HTTPS соединение
+	EnableHTTPS bool
 }
 
 // GetApplication сборка приложения на осонове переданной конфигурацинной структуры

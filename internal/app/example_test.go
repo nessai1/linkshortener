@@ -57,5 +57,5 @@ func ExampleRun() {
 		BuildVersion: "test version",
 		BuildDate:    time.Now().String(),
 		BuildCommit:  "N/A",
-	})
+	}, false)
 }

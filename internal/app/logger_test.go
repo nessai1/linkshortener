@@ -6,6 +6,9 @@ import (
 	"go.uber.org/zap/zapcore"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"regexp"
+	"strconv"
 	"testing"
 )
 
@@ -67,4 +70,76 @@ func TestLoggingResponseWriter(t *testing.T) {
 	assert.Equal(t, http.StatusConflict, rw.statusCode)
 	rw.WriteHeader(http.StatusForbidden)
 	assert.Equal(t, http.StatusConflict, rw.statusCode)
+}
+
+func TestGetRequestLogMiddleware(t *testing.T) {
+
+	tests := []struct {
+		name string
+
+		uri      string
+		method   string
+		userUUID string
+	}{
+		{
+			name: "Request with UUID",
+
+			uri:      "http://test.com/some/path",
+			method:   http.MethodGet,
+			userUUID: generateUserUUID(),
+		},
+		{
+			name:     "Request without UUID",
+			uri:      "http://test.com/some/cool/path",
+			method:   http.MethodPost,
+			userUUID: "",
+		},
+	}
+
+	testPrefix := "TEST_PREFIX"
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pathname := t.TempDir()
+			tempFile, err := os.Create(pathname + "/case_" + strconv.Itoa(i))
+			tempFileName := tempFile.Name()
+			require.NoError(t, err)
+
+			defaultStdout := os.Stdout
+			os.Stdout = tempFile
+
+			nextHandler := http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+				writer.WriteHeader(http.StatusTeapot)
+			})
+
+			logger, _ := CreateAppLogger(Development)
+			handlerToTest := GetRequestLogMiddleware(logger, testPrefix)(nextHandler)
+
+			req := httptest.NewRequest(tt.method, tt.uri, nil)
+			if tt.userUUID != "" {
+				sign, _ := generateSign(tt.userUUID)
+				req.AddCookie(&http.Cookie{Name: LoginCookieName, Value: sign})
+			}
+
+			handlerToTest.ServeHTTP(httptest.NewRecorder(), req)
+			err = tempFile.Close()
+			os.Stdout = defaultStdout
+			require.NoError(t, err)
+			tempFile, err = os.Open(tempFileName)
+
+			out := make([]byte, 1024)
+			tempFile.Read(out)
+
+			userUUID := tt.userUUID
+			if userUUID == "" {
+				userUUID = "undefined"
+			}
+
+			innerRequestLogPattern := `info\s\[` + testPrefix + `\]\sRequest info\s{"URI": "` + tt.uri + `", "Method": "` + tt.method + `", "Duration": \d*, "User UUID": "` + userUUID + `"}`
+
+			matched, _ := regexp.MatchString(innerRequestLogPattern, string(out))
+			assert.True(t, matched)
+
+			require.NoError(t, err)
+		})
+	}
 }

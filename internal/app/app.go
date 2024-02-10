@@ -1,15 +1,16 @@
 package app
 
 import (
+	"context"
+	"errors"
 	"fmt"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"go.uber.org/zap"
+	"golang.org/x/crypto/acme/autocert"
+	"net/http"
+	"os"
+	"os/signal"
 )
 
 // ApplicationInfo информация о приложении, указываямая при сборке линтером
@@ -23,7 +24,7 @@ type ApplicationInfo struct {
 }
 
 // Run запускает реализацию Application с режимом работы EnvType
-func Run(application Application, envType EnvType, info ApplicationInfo) {
+func Run(application Application, envType EnvType, info ApplicationInfo, useSecure bool) {
 	fmt.Printf("Build version: %s\nBuild date: %s\nBuild commit: %s\n", info.BuildVersion, info.BuildDate, info.BuildCommit)
 
 	router := chi.NewRouter()
@@ -49,18 +50,63 @@ func Run(application Application, envType EnvType, info ApplicationInfo) {
 
 	logger.Info("Starting server", zap.String("Server addr", application.GetAddr()))
 
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	var server http.Server
+	var start func(server *http.Server) error
+
+	if useSecure {
+		server = buildSecureServer(application.GetAddr(), router)
+		start = func(server *http.Server) error {
+			return server.ListenAndServeTLS("", "")
+		}
+	} else {
+		server = http.Server{
+			Addr:    application.GetAddr(),
+			Handler: router,
+		}
+		start = func(server *http.Server) error {
+			return server.ListenAndServe()
+		}
+	}
+
+	idleConnsClosed := make(chan struct{})
+	sigint := make(chan os.Signal, 1)
+	signal.Notify(sigint, os.Interrupt)
 	go func() {
-		<-c
-		application.OnBeforeClose()
-		os.Exit(0)
+		<-sigint
+		if err := server.Shutdown(context.Background()); err != nil {
+			logger.Error("Error HTTP server shutdown listener", zap.Error(err))
+		}
+		close(idleConnsClosed)
 	}()
 
-	if err := http.ListenAndServe(application.GetAddr(), router); err != nil {
-		panic(err)
+	if err := start(&server); !errors.Is(err, http.ErrServerClosed) {
+		logger.Error("Error while start listening server", zap.Error(err))
+		return
 	}
-	defer application.OnBeforeClose()
+
+	<-idleConnsClosed
+	application.OnBeforeClose()
+	logger.Info("Server graceful shutdown")
+}
+
+func buildSecureServer(addr string, mux http.Handler) http.Server {
+	// конструируем менеджер TLS-сертификатов
+	manager := &autocert.Manager{
+		// директория для хранения сертификатов
+		Cache: autocert.DirCache("cache-dir"),
+		// функция, принимающая Terms of Service издателя сертификатов
+		Prompt: autocert.AcceptTOS,
+		// перечень доменов, для которых будут поддерживаться сертификаты
+		HostPolicy: autocert.HostWhitelist(addr),
+	}
+
+	// конструируем сервер с поддержкой TLS
+	return http.Server{
+		Addr:    addr,
+		Handler: mux,
+		// для TLS-конфигурации используем менеджер сертификатов
+		TLSConfig: manager.TLSConfig(),
+	}
 }
 
 // Application интерфейс описывающий методы, на которые уделяется ответсвенность при работе фасада веб-приложения.
