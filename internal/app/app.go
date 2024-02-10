@@ -70,7 +70,7 @@ func Run(application Application, envType EnvType, info ApplicationInfo, useSecu
 
 	idleConnsClosed := make(chan struct{})
 	sigint := make(chan os.Signal, 1)
-	signal.Notify(sigint, os.Interrupt)
+	signal.Notify(sigint, os.Interrupt, os.Kill, os.Interrupt)
 	go func() {
 		<-sigint
 		if err := server.Shutdown(context.Background()); err != nil {
