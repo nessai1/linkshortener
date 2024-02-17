@@ -83,6 +83,28 @@ func (storage *MemoryLinkStorage) DeleteBatch(_ context.Context, items []Hash) e
 	return nil
 }
 
+// GetUniqueUsersCount возвращает кол-во уникальных OwnerUUID'ов в карте
+func (storage *MemoryLinkStorage) GetUniqueUsersCount(_ context.Context) (int, error) {
+	m := make(map[string]bool)
+	for _, val := range storage.hl {
+		m[val.OwnerUUID] = true
+	}
+
+	return len(m), nil
+}
+
+// GetUniqueURLsCount возвращает кол-во уникальных&не-удаленных элементов карты
+func (storage *MemoryLinkStorage) GetUniqueURLsCount(_ context.Context) (int, error) {
+	cnt := 0
+	for _, val := range storage.hl {
+		if !val.IsDeleted {
+			cnt++
+		}
+	}
+
+	return cnt, nil
+}
+
 // BeforeShutdown не делает никаких операций перед закрытием приложения
 func (storage *MemoryLinkStorage) BeforeShutdown() error {
 	return nil

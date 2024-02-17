@@ -59,6 +59,11 @@ type LinkStorage interface {
 	// DeleteBatch маркирует пачку ссылок как удаленные
 	DeleteBatch(ctx context.Context, items []Hash) error
 
+	// GetUniqueUsersCount возвращает кол-во уникальных пользователей в сервисе
+	GetUniqueUsersCount(ctx context.Context) (int, error)
+	// GetUniqueURLsCount возвращает кол-во уникальных сокращенных ссылок в сервисе
+	GetUniqueURLsCount(ctx context.Context) (int, error)
+
 	// BeforeShutdown метод, вызывающийся перед закрытием хранилища
 	BeforeShutdown() error
 }
