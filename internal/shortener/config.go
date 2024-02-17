@@ -7,13 +7,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/golang-migrate/migrate/v4"
 	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
 	"os"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 
-	_ "github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4"
 
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 
