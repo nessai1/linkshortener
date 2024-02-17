@@ -153,6 +153,36 @@ func (storage *PsqlLinkStorage) BeforeShutdown() error {
 	return storage.db.Close()
 }
 
+// GetUniqueUsersCount возвращает кол-во уникальных UUID'ов в БД
+func (storage *PsqlLinkStorage) GetUniqueUsersCount(ctx context.Context) (int, error) {
+	var cnt int
+	err := storage.db.QueryRowContext(
+		ctx,
+		"SELECT COUNT(DISTINCT owner_uuid) FROM hash_link",
+	).Scan(&cnt)
+
+	if err != nil {
+		return 0, fmt.Errorf("[psql storage] error while load unique users count: %w", err)
+	}
+
+	return cnt, nil
+}
+
+// GetUniqueURLsCount возвращает кол-во уникальных&не-удаленных хешей в БД
+func (storage *PsqlLinkStorage) GetUniqueURLsCount(ctx context.Context) (int, error) {
+	var cnt int
+	err := storage.db.QueryRowContext(
+		ctx,
+		"SELECT COUNT(hash) FROM hash_link WHERE is_deleted = false",
+	).Scan(&cnt)
+
+	if err != nil {
+		return 0, fmt.Errorf("[psql storage] error while load unique urls count: %w", err)
+	}
+
+	return cnt, nil
+}
+
 // NewPsqlStorage создает новый экземпляр PsqlLinkStorage подключаясь по указанному PSQL соединению db
 func NewPsqlStorage(db *sql.DB) (*PsqlLinkStorage, error) {
 	if err := db.Ping(); err != nil {

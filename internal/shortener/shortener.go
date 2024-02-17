@@ -3,6 +3,7 @@ package shortener
 import (
 	"context"
 	"errors"
+	"net"
 	"net/http"
 	"regexp"
 
@@ -23,6 +24,8 @@ type Config struct {
 	LinkStorage linkstorage.LinkStorage
 	// EnableHTTPS указывает, будет ли использовать сервер HTTPS соединение
 	EnableHTTPS bool
+	// InternalNet определяет внутреннюю подсеть, клиентам которой доступны служебные обработчики  /api/internal/*
+	InternalNet *net.IPNet
 }
 
 // GetApplication сборка приложения на осонове переданной конфигурацинной структуры
