@@ -32,7 +32,9 @@ func BuildAppConfig() (*Config, error) {
 	}
 
 	shortenerConfig := Config{
-		ServerAddr:  config.ServerAddr,
+		ServerAddr: config.ServerAddr,
+		GRPCAddr:   config.GRPCAddr,
+
 		TokenTail:   config.TokenTail,
 		LinkStorage: linkStorage,
 		EnableHTTPS: config.EnableHTTPS,
@@ -45,6 +47,8 @@ func BuildAppConfig() (*Config, error) {
 type InitConfig struct {
 	// ServerAddr адрес сервера
 	ServerAddr string `json:"server_address"`
+	// GRPCAddr адрес gRPC сервера
+	GRPCAddr string `json:"grpc_address"`
 	// TokenTail префикс с которым будет возвращаться результат хеширования ссылки
 	TokenTail string `json:"base_url"`
 	// SQLConnection строка с настройками соединения к СУБД
@@ -59,6 +63,7 @@ type InitConfig struct {
 
 func fetchConfig() (InitConfig, error) {
 	serverAddr := flag.String("a", "", "Address of application")
+	gRPCAddr := flag.String("grpc", "", "Address of gRPC")
 	tokenTail := flag.String("b", "", "Left tail of token of shorted URL")
 	storageFilePath := flag.String("f", "./tmp/short-url-db.json", "Path to file storage")
 	postgresConnParams := flag.String("d", "", "Connection params for postgres")
@@ -70,6 +75,10 @@ func fetchConfig() (InitConfig, error) {
 
 	if serverAddrEnv := os.Getenv("SERVER_ADDRESS"); serverAddrEnv != "" {
 		*serverAddr = serverAddrEnv
+	}
+
+	if gRPCAddrEnv := os.Getenv("GRPC_ADDRESS"); gRPCAddrEnv != "" {
+		*gRPCAddr = gRPCAddrEnv
 	}
 
 	if tokenTailEnv := os.Getenv("BASE_URL"); tokenTailEnv != "" {
@@ -106,6 +115,10 @@ func fetchConfig() (InitConfig, error) {
 			*serverAddr = jsonConfig.ServerAddr
 		}
 
+		if *gRPCAddr == "" {
+			*gRPCAddr = jsonConfig.GRPCAddr
+		}
+
 		if *tokenTail == "" {
 			*tokenTail = jsonConfig.TokenTail
 		}
@@ -134,6 +147,7 @@ func fetchConfig() (InitConfig, error) {
 		FileStoragePath: *storageFilePath,
 		EnableHTTPS:     *enableHTTPS,
 		TrustedSubnet:   *trustedSubnet,
+		GRPCAddr:        *gRPCAddr,
 	}, nil
 }
 

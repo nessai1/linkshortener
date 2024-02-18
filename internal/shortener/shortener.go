@@ -3,6 +3,7 @@ package shortener
 import (
 	"context"
 	"errors"
+	"google.golang.org/grpc"
 	"net"
 	"net/http"
 	"regexp"
@@ -12,12 +13,16 @@ import (
 	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
 
 	"go.uber.org/zap"
+
+	pb "github.com/nessai1/linkshortener/proto"
 )
 
 // Config рафинированная структура с конфигурацией, получаемая в результате обработки InitConfig
 type Config struct {
 	// ServerAddr адрес сервера
 	ServerAddr string
+	// GRPCAddr адрес gRPC сервера
+	GRPCAddr string
 	// TokenTail префикс хешированной ссылки
 	TokenTail string
 	// LinkStorage репозиторий сокращенных ссылок
@@ -43,6 +48,8 @@ type Application struct {
 	config  *Config
 	logger  *zap.Logger
 	storage linkstorage.LinkStorage
+
+	pb.UnimplementedShortenerServiceServer
 }
 
 // OnBeforeClose выполняет закрытие хранилища перед завершением приложения
@@ -116,4 +123,14 @@ func validateURL(url []byte) bool {
 		return false
 	}
 	return res
+}
+
+func (application *Application) GetGRPCAddr() string {
+	return application.config.GRPCAddr
+}
+
+func (application *Application) RegisterGRPCService(server *grpc.Server) error {
+	pb.RegisterShortenerServiceServer(server, application)
+
+	return nil
 }
