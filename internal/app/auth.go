@@ -36,7 +36,8 @@ type claims struct {
 	UserUUID string
 }
 
-func generateUserUUID() string {
+// GenerateUserUUID generate user UUID :)
+func GenerateUserUUID() string {
 	return uuid.New().String()
 }
 
@@ -75,7 +76,7 @@ func authorize(writer http.ResponseWriter, request *http.Request) (UserUUID, err
 	needToCreateSign := isNeedToCreateSign(request)
 
 	if needToCreateSign {
-		userUUID := generateUserUUID()
+		userUUID := GenerateUserUUID()
 		sign, err := generateSign(userUUID)
 		if err != nil {
 			return "", fmt.Errorf("cannot generate signed user UUID: %s", err.Error())

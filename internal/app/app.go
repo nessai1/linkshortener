@@ -81,7 +81,13 @@ func Run(application Application, envType EnvType, info ApplicationInfo, useSecu
 			return
 		}
 
-		gRPCServer = grpc.NewServer()
+		interceptors := application.GetGRPCInterceptors()
+		if interceptors != nil {
+			gRPCServer = grpc.NewServer(grpc.ChainUnaryInterceptor(interceptors...))
+		} else {
+			gRPCServer = grpc.NewServer()
+		}
+
 		err = application.RegisterGRPCService(gRPCServer)
 		if err != nil {
 			logger.Fatal("Error while register gRPC service", zap.Error(err))
@@ -156,6 +162,9 @@ type Application interface {
 
 	// GetGRPCAddr возвращает адрес по которому будет запущен gRPC сервер. Если пуста строчка - сервер не запустится
 	GetGRPCAddr() string
+
+	// GetGRPCInterceptors возвращает список перехватчиков gRPC сервера
+	GetGRPCInterceptors() []grpc.UnaryServerInterceptor
 
 	// RegisterGRPCService регистрирует gRPC сервер, исходящий из кода старта приложения
 	RegisterGRPCService(server *grpc.Server) error

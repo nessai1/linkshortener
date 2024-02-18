@@ -36,7 +36,7 @@ type ShortenerServiceClient interface {
 	AddLinkBatch(ctx context.Context, in *AddLinkBatchRequest, opts ...grpc.CallOption) (*AddLinkBatchResponse, error)
 	GetUserLinks(ctx context.Context, in *GetUserLinksRequest, opts ...grpc.CallOption) (*GetUserLinksResponse, error)
 	DeleteLink(ctx context.Context, in *DeleteLinkRequest, opts ...grpc.CallOption) (*DeleteLinkResponse, error)
-	GetServiceStats(ctx context.Context, in *GetServiceStatsRequest, opts ...grpc.CallOption) (*GetUserLinksResponse, error)
+	GetServiceStats(ctx context.Context, in *GetServiceStatsRequest, opts ...grpc.CallOption) (*GetServiceStatsResponse, error)
 }
 
 type shortenerServiceClient struct {
@@ -92,8 +92,8 @@ func (c *shortenerServiceClient) DeleteLink(ctx context.Context, in *DeleteLinkR
 	return out, nil
 }
 
-func (c *shortenerServiceClient) GetServiceStats(ctx context.Context, in *GetServiceStatsRequest, opts ...grpc.CallOption) (*GetUserLinksResponse, error) {
-	out := new(GetUserLinksResponse)
+func (c *shortenerServiceClient) GetServiceStats(ctx context.Context, in *GetServiceStatsRequest, opts ...grpc.CallOption) (*GetServiceStatsResponse, error) {
+	out := new(GetServiceStatsResponse)
 	err := c.cc.Invoke(ctx, ShortenerService_GetServiceStats_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ type ShortenerServiceServer interface {
 	AddLinkBatch(context.Context, *AddLinkBatchRequest) (*AddLinkBatchResponse, error)
 	GetUserLinks(context.Context, *GetUserLinksRequest) (*GetUserLinksResponse, error)
 	DeleteLink(context.Context, *DeleteLinkRequest) (*DeleteLinkResponse, error)
-	GetServiceStats(context.Context, *GetServiceStatsRequest) (*GetUserLinksResponse, error)
+	GetServiceStats(context.Context, *GetServiceStatsRequest) (*GetServiceStatsResponse, error)
 	mustEmbedUnimplementedShortenerServiceServer()
 }
 
@@ -133,7 +133,7 @@ func (UnimplementedShortenerServiceServer) GetUserLinks(context.Context, *GetUse
 func (UnimplementedShortenerServiceServer) DeleteLink(context.Context, *DeleteLinkRequest) (*DeleteLinkResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteLink not implemented")
 }
-func (UnimplementedShortenerServiceServer) GetServiceStats(context.Context, *GetServiceStatsRequest) (*GetUserLinksResponse, error) {
+func (UnimplementedShortenerServiceServer) GetServiceStats(context.Context, *GetServiceStatsRequest) (*GetServiceStatsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetServiceStats not implemented")
 }
 func (UnimplementedShortenerServiceServer) mustEmbedUnimplementedShortenerServiceServer() {}

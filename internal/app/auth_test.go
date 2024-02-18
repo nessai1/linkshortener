@@ -11,13 +11,13 @@ import (
 )
 
 func TestGenerateUserUUID(t *testing.T) {
-	uuid := generateUserUUID()
+	uuid := GenerateUserUUID()
 	rg := regexp.MustCompile("[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}")
 	assert.True(t, rg.Match([]byte(uuid)))
 }
 
 func TestGenerateSignAndFetch(t *testing.T) {
-	uuid := generateUserUUID()
+	uuid := GenerateUserUUID()
 
 	sign, err := generateSign(uuid)
 	assert.NoError(t, err)
@@ -45,7 +45,7 @@ func TestIsNeedToCreateSign(t *testing.T) {
 
 	assert.True(t, isNeedToCreateSign(request))
 
-	validSign, _ := generateSign(generateUserUUID())
+	validSign, _ := generateSign(GenerateUserUUID())
 	cookie = http.Cookie{
 		Name:  LoginCookieName,
 		Value: validSign,
@@ -65,7 +65,7 @@ func TestAuthorize(t *testing.T) {
 	}{
 		{
 			name: "Valid UUID",
-			uuid: generateUserUUID(),
+			uuid: GenerateUserUUID(),
 		},
 		{
 			name: "Invalid sign",
@@ -112,7 +112,7 @@ func TestAuthorize(t *testing.T) {
 }
 
 func TestGetAuthMiddleware(t *testing.T) {
-	userUUID := generateUserUUID()
+	userUUID := GenerateUserUUID()
 	validSign, _ := generateSign(userUUID)
 	tests := []struct {
 		name string
@@ -177,7 +177,7 @@ func TestGetAuthMiddleware(t *testing.T) {
 
 func TestGetRegisterMiddleware(t *testing.T) {
 
-	userUUID := generateUserUUID()
+	userUUID := GenerateUserUUID()
 	sign, _ := generateSign(userUUID)
 
 	tests := []struct {

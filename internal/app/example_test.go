@@ -49,11 +49,15 @@ func (m *MyBeautifulApp) GetControllers() []app.Controller {
 	return controllers
 }
 
-func (application *MyBeautifulApp) GetGRPCAddr() string {
+func (m *MyBeautifulApp) GetGRPCAddr() string {
 	return ""
 }
 
-func (application *MyBeautifulApp) RegisterGRPCService(server *grpc.Server) error {
+func (m *MyBeautifulApp) GetGRPCInterceptors() []grpc.UnaryServerInterceptor {
+	return nil
+}
+
+func (m *MyBeautifulApp) RegisterGRPCService(server *grpc.Server) error {
 	return nil
 }
 

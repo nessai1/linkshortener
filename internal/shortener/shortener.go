@@ -3,9 +3,7 @@ package shortener
 import (
 	"context"
 	"errors"
-	"google.golang.org/grpc"
 	"net"
-	"net/http"
 	"regexp"
 
 	"github.com/nessai1/linkshortener/internal/app"
@@ -91,15 +89,18 @@ func (application *Application) GetControllers() []app.Controller {
 	}
 }
 
-func (application *Application) buildTokenTail(request *http.Request) string {
+func (application *Application) buildTokenTail() string {
 	if configTail := application.config.TokenTail; configTail != "" {
 		return configTail + "/"
 	}
 
-	scheme := "http://"
-	if request.TLS != nil {
+	var scheme string
+	if application.config.EnableHTTPS {
 		scheme = "https://"
+	} else {
+		scheme = "http://"
 	}
+
 	return scheme + application.GetAddr() + "/"
 }
 
@@ -123,14 +124,4 @@ func validateURL(url []byte) bool {
 		return false
 	}
 	return res
-}
-
-func (application *Application) GetGRPCAddr() string {
-	return application.config.GRPCAddr
-}
-
-func (application *Application) RegisterGRPCService(server *grpc.Server) error {
-	pb.RegisterShortenerServiceServer(server, application)
-
-	return nil
 }

@@ -106,7 +106,7 @@ func (application *Application) apiHandleAddURL(writer http.ResponseWriter, requ
 		}
 	}
 
-	link := application.buildTokenTail(request) + hash
+	link := application.buildTokenTail() + hash
 
 	requestResult, _ := json.Marshal(addURLRequestResult{Result: link})
 
@@ -169,7 +169,7 @@ func (application *Application) apiHandleAddBatchURL(writer http.ResponseWriter,
 		}
 		expectedResult[i] = batchItemResponse{
 			CorrelationID: item.CorrelationID,
-			ShortURL:      application.buildTokenTail(request) + hash,
+			ShortURL:      application.buildTokenTail() + hash,
 		}
 	}
 
@@ -213,7 +213,7 @@ func (application *Application) apiHandleGetUserURLs(writer http.ResponseWriter,
 	for _, row := range rows {
 		result = append(result, getUserURLsResult{
 			OriginalURL: row.Value,
-			ShortURL:    application.buildTokenTail(request) + row.Key,
+			ShortURL:    application.buildTokenTail() + row.Key,
 		})
 	}
 
