@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"time"
 
@@ -35,7 +36,8 @@ type claims struct {
 	UserUUID string
 }
 
-func generateUserUUID() string {
+// GenerateUserUUID generate user UUID :)
+func GenerateUserUUID() string {
 	return uuid.New().String()
 }
 
@@ -74,7 +76,7 @@ func authorize(writer http.ResponseWriter, request *http.Request) (UserUUID, err
 	needToCreateSign := isNeedToCreateSign(request)
 
 	if needToCreateSign {
-		userUUID := generateUserUUID()
+		userUUID := GenerateUserUUID()
 		sign, err := generateSign(userUUID)
 		if err != nil {
 			return "", fmt.Errorf("cannot generate signed user UUID: %s", err.Error())
@@ -150,6 +152,27 @@ func GetRegisterMiddleware(logger *zap.Logger) func(handler http.Handler) http.H
 
 			ctx := context.WithValue(request.Context(), ContextUserUUIDKey, userUUID)
 			request = request.WithContext(ctx)
+
+			next.ServeHTTP(writer, request)
+		})
+	}
+}
+
+// GetInterserviceMiddleware returns middleware that provide requests only from trusted network
+func GetInterserviceMiddleware(logger *zap.Logger, trustedNetwork *net.IPNet) func(handler http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			if trustedNetwork == nil {
+				writer.WriteHeader(http.StatusForbidden)
+				return
+			}
+
+			clientIPStr := request.Header.Get("X-Real-IP")
+			clientIP := net.ParseIP(clientIPStr)
+			if clientIP == nil || !trustedNetwork.Contains(clientIP) {
+				writer.WriteHeader(http.StatusForbidden)
+				return
+			}
 
 			next.ServeHTTP(writer, request)
 		})

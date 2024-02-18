@@ -3,7 +3,7 @@ package shortener
 import (
 	"context"
 	"errors"
-	"net/http"
+	"net"
 	"regexp"
 
 	"github.com/nessai1/linkshortener/internal/app"
@@ -11,18 +11,24 @@ import (
 	"github.com/nessai1/linkshortener/internal/shortener/linkstorage"
 
 	"go.uber.org/zap"
+
+	pb "github.com/nessai1/linkshortener/proto"
 )
 
 // Config рафинированная структура с конфигурацией, получаемая в результате обработки InitConfig
 type Config struct {
 	// ServerAddr адрес сервера
 	ServerAddr string
+	// GRPCAddr адрес gRPC сервера
+	GRPCAddr string
 	// TokenTail префикс хешированной ссылки
 	TokenTail string
 	// LinkStorage репозиторий сокращенных ссылок
 	LinkStorage linkstorage.LinkStorage
 	// EnableHTTPS указывает, будет ли использовать сервер HTTPS соединение
 	EnableHTTPS bool
+	// InternalNet определяет внутреннюю подсеть, клиентам которой доступны служебные обработчики  /api/internal/*
+	InternalNet *net.IPNet
 }
 
 // GetApplication сборка приложения на осонове переданной конфигурацинной структуры
@@ -40,6 +46,8 @@ type Application struct {
 	config  *Config
 	logger  *zap.Logger
 	storage linkstorage.LinkStorage
+
+	pb.UnimplementedShortenerServiceServer
 }
 
 // OnBeforeClose выполняет закрытие хранилища перед завершением приложения
@@ -81,15 +89,18 @@ func (application *Application) GetControllers() []app.Controller {
 	}
 }
 
-func (application *Application) buildTokenTail(request *http.Request) string {
+func (application *Application) buildTokenTail() string {
 	if configTail := application.config.TokenTail; configTail != "" {
 		return configTail + "/"
 	}
 
-	scheme := "http://"
-	if request.TLS != nil {
+	var scheme string
+	if application.config.EnableHTTPS {
 		scheme = "https://"
+	} else {
+		scheme = "http://"
 	}
+
 	return scheme + application.GetAddr() + "/"
 }
 

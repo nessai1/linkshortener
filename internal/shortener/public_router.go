@@ -57,7 +57,7 @@ func (application *Application) handleAddURL(writer http.ResponseWriter, request
 		}
 	}
 
-	link := application.buildTokenTail(request) + hash
+	link := application.buildTokenTail() + hash
 
 	writer.Header().Set("Content-Type", "text/plain")
 	writer.WriteHeader(http.StatusCreated)

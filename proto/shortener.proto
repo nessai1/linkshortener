@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package linkshortener;
+option go_package = "github.com/nessai1/linkshortener/proto";
+
+
+message AddLinkRequest {
+  string link = 1;
+}
+
+message AddLinkResponse {
+  string hash = 1;
+  string error = 2;
+}
+
+message GetLinkRequest {
+  string hash = 1;
+}
+
+message GetLinkResponse {
+  string link = 1;
+  string error = 2;
+}
+
+
+message CorrelationLink {
+  string id = 1;
+  string link = 2;
+}
+
+message CorrelationHash {
+  string id = 1;
+  string hash = 2;
+}
+
+message AddLinkBatchRequest {
+  repeated CorrelationLink links = 1;
+}
+
+message AddLinkBatchResponse {
+  repeated CorrelationHash hashes = 1;
+  string error = 2;
+}
+
+message HashLink {
+  string original_url = 1;
+  string short_url = 2;
+}
+
+message GetUserLinksRequest{}
+
+message GetUserLinksResponse {
+  repeated HashLink hl = 1;
+  string error = 2;
+}
+
+message DeleteLinkRequest {
+  repeated string links = 1;
+}
+
+message DeleteLinkResponse {
+  string error = 1;
+}
+
+message GetServiceStatsRequest{}
+
+message GetServiceStatsResponse {
+  uint32 links_count = 1;
+  uint32 users_count = 2;
+  string error = 3;
+}
+
+
+service ShortenerService {
+  rpc AddLink(AddLinkRequest) returns (AddLinkResponse);
+  rpc GetLink(GetLinkRequest) returns (GetLinkResponse);
+  rpc AddLinkBatch(AddLinkBatchRequest) returns (AddLinkBatchResponse);
+  rpc GetUserLinks(GetUserLinksRequest) returns (GetUserLinksResponse);
+  rpc DeleteLink(DeleteLinkRequest) returns (DeleteLinkResponse);
+  rpc GetServiceStats(GetServiceStatsRequest) returns (GetServiceStatsResponse);
+}

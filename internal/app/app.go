@@ -8,6 +8,8 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/acme/autocert"
+	"google.golang.org/grpc"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -68,19 +70,54 @@ func Run(application Application, envType EnvType, info ApplicationInfo, useSecu
 		}
 	}
 
-	idleConnsClosed := make(chan struct{})
 	sigint := make(chan os.Signal, 1)
 	signal.Notify(sigint, os.Interrupt)
+
+	var gRPCServer *grpc.Server
+	if application.GetGRPCAddr() != "" {
+		listen, err := net.Listen("tcp", application.GetGRPCAddr())
+		if err != nil {
+			logger.Fatal("Error while start gRPC listener", zap.Error(err))
+			return
+		}
+
+		interceptors := application.GetGRPCInterceptors()
+		if interceptors != nil {
+			gRPCServer = grpc.NewServer(grpc.ChainUnaryInterceptor(interceptors...))
+		} else {
+			gRPCServer = grpc.NewServer()
+		}
+
+		err = application.RegisterGRPCService(gRPCServer)
+		if err != nil {
+			logger.Fatal("Error while register gRPC service", zap.Error(err))
+			return
+		}
+
+		go func() {
+			logger.Info("Starting gRPC server", zap.String("Server addr", application.GetGRPCAddr()))
+			if err := gRPCServer.Serve(listen); err != nil {
+				logger.Fatal("Cannot start gRPC server", zap.Error(err))
+				sigint <- os.Interrupt
+			}
+		}()
+	}
+
+	idleConnsClosed := make(chan struct{})
 	go func() {
 		<-sigint
 		if err := server.Shutdown(context.Background()); err != nil {
 			logger.Error("Error HTTP server shutdown listener", zap.Error(err))
 		}
+
+		if gRPCServer != nil {
+			gRPCServer.GracefulStop()
+		}
 		close(idleConnsClosed)
 	}()
 
 	if err := start(&server); !errors.Is(err, http.ErrServerClosed) {
-		logger.Error("Error while start listening server", zap.Error(err))
+		logger.Fatal("Error while start listening server", zap.Error(err))
 		return
 	}
 
@@ -122,6 +159,15 @@ type Application interface {
 
 	// GetControllers возвращает список контроллеров, которые будут смонтированы в роутер приложения
 	GetControllers() []Controller
+
+	// GetGRPCAddr возвращает адрес по которому будет запущен gRPC сервер. Если пуста строчка - сервер не запустится
+	GetGRPCAddr() string
+
+	// GetGRPCInterceptors возвращает список перехватчиков gRPC сервера
+	GetGRPCInterceptors() []grpc.UnaryServerInterceptor
+
+	// RegisterGRPCService регистрирует gRPC сервер, исходящий из кода старта приложения
+	RegisterGRPCService(server *grpc.Server) error
 }
 
 // EnvType идентификатор режима работы приложения

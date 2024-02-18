@@ -106,7 +106,7 @@ func (application *Application) apiHandleAddURL(writer http.ResponseWriter, requ
 		}
 	}
 
-	link := application.buildTokenTail(request) + hash
+	link := application.buildTokenTail() + hash
 
 	requestResult, _ := json.Marshal(addURLRequestResult{Result: link})
 
@@ -169,7 +169,7 @@ func (application *Application) apiHandleAddBatchURL(writer http.ResponseWriter,
 		}
 		expectedResult[i] = batchItemResponse{
 			CorrelationID: item.CorrelationID,
-			ShortURL:      application.buildTokenTail(request) + hash,
+			ShortURL:      application.buildTokenTail() + hash,
 		}
 	}
 
@@ -213,7 +213,7 @@ func (application *Application) apiHandleGetUserURLs(writer http.ResponseWriter,
 	for _, row := range rows {
 		result = append(result, getUserURLsResult{
 			OriginalURL: row.Value,
-			ShortURL:    application.buildTokenTail(request) + row.Key,
+			ShortURL:    application.buildTokenTail() + row.Key,
 		})
 	}
 
@@ -264,6 +264,39 @@ func (application *Application) apiHandleDeleteURLs(writer http.ResponseWriter, 
 	writer.WriteHeader(http.StatusAccepted)
 }
 
+type statusRequestResult struct {
+	Urls  int `json:"urls"`
+	Users int `json:"users"`
+}
+
+func (application *Application) apiInternalGetStats(writer http.ResponseWriter, request *http.Request) {
+	urlCount, err := application.storage.GetUniqueURLsCount(request.Context())
+	if err != nil {
+		application.logger.Error("cannot load unique urls for stats", zap.Error(err))
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	userCount, err := application.storage.GetUniqueUsersCount(request.Context())
+	if err != nil {
+		application.logger.Error("cannot load unique users for stats", zap.Error(err))
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	writer.Header().Set("Content-Type", "application/json")
+
+	res := statusRequestResult{
+		Urls:  urlCount,
+		Users: userCount,
+	}
+	marshalledResult, _ := json.Marshal(res)
+	_, err = writer.Write(marshalledResult)
+
+	if err != nil {
+		application.logger.Error("error while write result for stats request", zap.Error(err))
+	}
+}
+
 func (application *Application) getAPIRouter() *chi.Mux {
 	linksRouter := chi.NewRouter()
 	linksRouter.Use(app.GetRegisterMiddleware(application.logger))
@@ -275,10 +308,15 @@ func (application *Application) getAPIRouter() *chi.Mux {
 	userRouter.Get("/urls", application.apiHandleGetUserURLs)
 	userRouter.Delete("/urls", application.apiHandleDeleteURLs)
 
+	internalRouter := chi.NewRouter()
+	internalRouter.Use(app.GetInterserviceMiddleware(application.logger, application.config.InternalNet))
+	internalRouter.Get("/stats", application.apiInternalGetStats)
+
 	router := chi.NewRouter()
 	router.Use(app.GetRequestLogMiddleware(application.logger, "API"))
 	router.Mount("/shorten", linksRouter)
 	router.Mount("/user", userRouter)
+	router.Mount("/internal", internalRouter)
 
 	return router
 }

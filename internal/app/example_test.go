@@ -4,6 +4,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/nessai1/linkshortener/internal/app"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 	"net/http"
 	"time"
 )
@@ -46,6 +47,18 @@ func (m *MyBeautifulApp) GetControllers() []app.Controller {
 	controllers[0] = controller
 
 	return controllers
+}
+
+func (m *MyBeautifulApp) GetGRPCAddr() string {
+	return ""
+}
+
+func (m *MyBeautifulApp) GetGRPCInterceptors() []grpc.UnaryServerInterceptor {
+	return nil
+}
+
+func (m *MyBeautifulApp) RegisterGRPCService(server *grpc.Server) error {
+	return nil
 }
 
 func ExampleRun() {

@@ -32,7 +32,9 @@ func BuildAppConfig() (*Config, error) {
 	}
 
 	shortenerConfig := Config{
-		ServerAddr:  config.ServerAddr,
+		ServerAddr: config.ServerAddr,
+		GRPCAddr:   config.GRPCAddr,
+
 		TokenTail:   config.TokenTail,
 		LinkStorage: linkStorage,
 		EnableHTTPS: config.EnableHTTPS,
@@ -45,6 +47,8 @@ func BuildAppConfig() (*Config, error) {
 type InitConfig struct {
 	// ServerAddr адрес сервера
 	ServerAddr string `json:"server_address"`
+	// GRPCAddr адрес gRPC сервера
+	GRPCAddr string `json:"grpc_address"`
 	// TokenTail префикс с которым будет возвращаться результат хеширования ссылки
 	TokenTail string `json:"base_url"`
 	// SQLConnection строка с настройками соединения к СУБД
@@ -53,20 +57,28 @@ type InitConfig struct {
 	FileStoragePath string `json:"file_storage_path"`
 	// EnableHTTPS говорит серверу использовать https соединение
 	EnableHTTPS bool `json:"enable_https"`
+	// TrustedSubnet подсеть которой доступны служебные обработчики
+	TrustedSubnet string `json:"trusted_subnet"`
 }
 
 func fetchConfig() (InitConfig, error) {
 	serverAddr := flag.String("a", "", "Address of application")
+	gRPCAddr := flag.String("grpc", "", "Address of gRPC")
 	tokenTail := flag.String("b", "", "Left tail of token of shorted URL")
 	storageFilePath := flag.String("f", "./tmp/short-url-db.json", "Path to file storage")
 	postgresConnParams := flag.String("d", "", "Connection params for postgres")
 	enableHTTPS := flag.Bool("s", false, "Use HTTP secure connection")
 	configPath := flag.String("c", "", "Config file in JSON format to configure server")
+	trustedSubnet := flag.String("t", "", "Subnet to which service handlers are available")
 
 	flag.Parse()
 
 	if serverAddrEnv := os.Getenv("SERVER_ADDRESS"); serverAddrEnv != "" {
 		*serverAddr = serverAddrEnv
+	}
+
+	if gRPCAddrEnv := os.Getenv("GRPC_ADDRESS"); gRPCAddrEnv != "" {
+		*gRPCAddr = gRPCAddrEnv
 	}
 
 	if tokenTailEnv := os.Getenv("BASE_URL"); tokenTailEnv != "" {
@@ -89,6 +101,10 @@ func fetchConfig() (InitConfig, error) {
 		*configPath = configPathEnv
 	}
 
+	if trustedSubnetEnv := os.Getenv("TRUSTED_SUBNET"); trustedSubnetEnv != "" {
+		*trustedSubnet = trustedSubnetEnv
+	}
+
 	if *configPath != "" {
 		jsonConfig, err := initJSONConfig(*configPath)
 		if err != nil {
@@ -97,6 +113,10 @@ func fetchConfig() (InitConfig, error) {
 
 		if *serverAddr == "" {
 			*serverAddr = jsonConfig.ServerAddr
+		}
+
+		if *gRPCAddr == "" {
+			*gRPCAddr = jsonConfig.GRPCAddr
 		}
 
 		if *tokenTail == "" {
@@ -114,6 +134,10 @@ func fetchConfig() (InitConfig, error) {
 		if !*enableHTTPS {
 			*enableHTTPS = jsonConfig.EnableHTTPS
 		}
+
+		if *trustedSubnet == "" {
+			*trustedSubnet = jsonConfig.TrustedSubnet
+		}
 	}
 
 	return InitConfig{
@@ -122,6 +146,8 @@ func fetchConfig() (InitConfig, error) {
 		SQLConnection:   *postgresConnParams,
 		FileStoragePath: *storageFilePath,
 		EnableHTTPS:     *enableHTTPS,
+		TrustedSubnet:   *trustedSubnet,
+		GRPCAddr:        *gRPCAddr,
 	}, nil
 }
 

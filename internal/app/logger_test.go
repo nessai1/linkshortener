@@ -86,7 +86,7 @@ func TestGetRequestLogMiddleware(t *testing.T) {
 
 			uri:      "http://test.com/some/path",
 			method:   http.MethodGet,
-			userUUID: generateUserUUID(),
+			userUUID: GenerateUserUUID(),
 		},
 		{
 			name:     "Request without UUID",
