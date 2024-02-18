@@ -253,6 +253,21 @@
           }
         }
       }
+    },
+    "/api/internal/status": {
+      "get": {
+        "tags": ["API"],
+        "operationId": "getStats",
+        "description": "Получить статистические данные о сервисе",
+        "responses": {
+          "200": {
+            "description": "Стат. данные"
+          },
+          "401": {
+            "description": "Запрос пришел не из доверенной сети (trusted_net)"
+          }
+        }
+      }
     }
   }
 }
